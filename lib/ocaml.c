@@ -754,7 +754,7 @@ CAMLprim value ocaml_cs_disasm_internal(value _arch, value _handle, value _code,
 CAMLprim value ocaml_open(value _arch, value _mode)
 {
 	CAMLparam2(_arch, _mode);
-	CAMLlocal2(list, head, result);
+	CAMLlocal3(list, head, result);
 	csh handle;
 	cs_arch arch;
 	cs_mode mode = 0;
