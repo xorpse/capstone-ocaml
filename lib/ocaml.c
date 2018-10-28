@@ -617,7 +617,7 @@ CAMLprim value _cs_disasm(cs_arch arch, csh handle, const uint8_t * code, size_t
 
 	// do not free the handle here
 	//cs_close(&handle);
-    CAMLreturn(list);
+	CAMLreturn(list);
 }
 
 CAMLprim value ocaml_cs_disasm(value _arch, value _mode, value _code, value _addr, value _count)
@@ -729,7 +729,7 @@ CAMLprim value ocaml_cs_disasm(value _arch, value _mode, value _code, value _add
 	addr = Int64_val(_addr);
 	count = Int64_val(_count);
 
-    CAMLreturn(_cs_disasm(arch, handle, code, code_len, addr, count));
+	CAMLreturn(_cs_disasm(arch, handle, code, code_len, addr, count));
 }
 
 CAMLprim value ocaml_cs_disasm_internal(value _arch, value _handle, value _code, value _addr, value _count)
@@ -748,13 +748,13 @@ CAMLprim value ocaml_cs_disasm_internal(value _arch, value _handle, value _code,
 	addr = Int64_val(_addr);
 	count = Int64_val(_count);
 
-    CAMLreturn(_cs_disasm(arch, handle, code, code_len, addr, count));
+	CAMLreturn(_cs_disasm(arch, handle, code, code_len, addr, count));
 }
 
 CAMLprim value ocaml_open(value _arch, value _mode)
 {
 	CAMLparam2(_arch, _mode);
-	CAMLlocal2(list, head);
+	CAMLlocal2(list, head, result);
 	csh handle;
 	cs_arch arch;
 	cs_mode mode = 0;
@@ -853,7 +853,6 @@ CAMLprim value ocaml_open(value _arch, value _mode)
 	if (cs_open(arch, mode, &handle) != 0)
 		CAMLreturn(Val_int(0));
 
-	CAMLlocal1(result);
 	result = caml_alloc(1, 0);
 	Store_field(result, 0, caml_copy_int64(handle));
 	CAMLreturn(result);
@@ -896,41 +895,45 @@ CAMLprim value ocaml_option(value _handle, value _opt, value _value)
 
 CAMLprim value ocaml_register_name(value _handle, value _reg)
 {
+	CAMLparam2(_handle, _reg);
 	const char *name = cs_reg_name(Int64_val(_handle), Int_val(_reg));
 	if (!name) {
-		caml_invalid_argument("invalid reg_id");
 		name = "invalid";
+		caml_invalid_argument("invalid reg_id");
 	}
 
-	return caml_copy_string(name);
+	CAMLreturn(caml_copy_string(name));
 }
 
 CAMLprim value ocaml_instruction_name(value _handle, value _insn)
 {
+	CAMLparam2(_handle, _insn);
 	const char *name = cs_insn_name(Int64_val(_handle), Int_val(_insn));
 	if (!name) {
-		caml_invalid_argument("invalid insn_id");
 		name = "invalid";
+		caml_invalid_argument("invalid insn_id");
 	}
 
-	return caml_copy_string(name);
+	CAMLreturn(caml_copy_string(name));
 }
 
 CAMLprim value ocaml_group_name(value _handle, value _insn)
 {
+	CAMLparam2(_handle, _insn);
 	const char *name = cs_group_name(Int64_val(_handle), Int_val(_insn));
 	if (!name) {
-		caml_invalid_argument("invalid insn_id");
 		name = "invalid";
+		caml_invalid_argument("invalid insn_id");
 	}
 
-	return caml_copy_string(name);
+	CAMLreturn(caml_copy_string(name));
 }
 
 CAMLprim value ocaml_version(void)
 {
+	CAMLparam0();
 	int version = cs_version(NULL, NULL);
-	return Val_int(version);
+	CAMLreturn(Val_int(version));
 }
 
 CAMLprim value ocaml_close(value _handle)
