@@ -1,0 +1,36 @@
+(library
+  (name capstone)
+  (public_name capstone)
+  (modules capstone
+           arm64_const
+           arm64
+           arm_const
+           arm
+           mips_const
+           mips
+           ppc_const
+           ppc
+           sparc_const
+           sparc
+           systemz
+           sysz_const
+           x86_const
+           x86
+           xcore_const
+           xcore)
+  (wrapped false)
+  (c_names ocaml)
+  (c_flags (-Wall -Wextra -Wwrite-strings))
+  (c_library_flags (-lcapstone)))
+
+(rule
+ (targets arm64_const.ml
+          arm_const.ml
+	  mips_const.ml
+	  ppc_const.ml
+	  sparc_const.ml
+	  sysz_const.ml
+	  x86_const.ml
+	  xcore_const.ml)
+ (deps    ../const_generator.py)
+ (action  (run python %{deps})))
