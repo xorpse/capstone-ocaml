@@ -1,198 +1,176 @@
-(* Capstone Disassembly Engine
- * By Nguyen Anh Quynh <aquynh@gmail.com>, 2013-2014 *)
-
 module Arm = Arm
 module Arm64 = Arm64
 module Mips = Mips
 module Ppc = Ppc
 module Sparc = Sparc
-module Systemz = Systemz
+module Sysz = Sysz
 module X86 = X86
 module Xcore = Xcore
 
-open Arm
-open Arm64
-open Mips
-open Ppc
-open X86
-open Sparc
-open Systemz
-open Xcore
+exception Capstone_error of Cs_const.cs_err
 
-(* Hardware architectures *)
-type arch =
-  | CS_ARCH_ARM
-  | CS_ARCH_ARM64
-  | CS_ARCH_MIPS
-  | CS_ARCH_X86
-  | CS_ARCH_PPC
-  | CS_ARCH_SPARC
-  | CS_ARCH_SYSZ
-  | CS_ARCH_XCORE
+type arch = [ `Arm | `Arm64 | `Mips | `Ppc | `Sparc | `Sysz | `X86 | `Xcore ]
 
-(* Hardware modes *)
-type mode =
-  |	CS_MODE_LITTLE_ENDIAN	(* little-endian mode (default mode) *)
-  |	CS_MODE_ARM			(* ARM mode *)
-  |	CS_MODE_16			(* 16-bit mode (for X86) *)
-  |	CS_MODE_32			(* 32-bit mode (for X86) *)
-  |	CS_MODE_64			(* 64-bit mode (for X86, PPC) *)
-  |	CS_MODE_THUMB		(* ARM's Thumb mode, including Thumb-2 *)
-  |	CS_MODE_MCLASS		(* ARM's MClass mode *)
-  |	CS_MODE_V8    		(* ARMv8 A32 encodings for ARM *)
-  |	CS_MODE_MICRO		(* MicroMips mode (MIPS architecture) *)
-  |	CS_MODE_MIPS3		(* Mips3 mode (MIPS architecture) *)
-  |	CS_MODE_MIPS32R6	(* Mips32-R6 mode (MIPS architecture) *)
-  |	CS_MODE_MIPSGP64	(* MipsGP64 mode (MIPS architecture) *)
-  |	CS_MODE_V9			(* SparcV9 mode (Sparc architecture) *)
-  |	CS_MODE_BIG_ENDIAN	(* big-endian mode *)
-  |	CS_MODE_MIPS32		(* Mips32 mode (for Mips) *)
-  |	CS_MODE_MIPS64		(* Mips64 mode (for Mips) *)
+type mode = Cs_const.cs_mode
 
+type opt = [ `Syntax of [ `Default | `Intel | `Att | `Noregname ]
+           | `Detail of [ `On | `Off ]
+           | `Mode of mode
+           | `Skipdata of [ `On | `Off ] ]
 
-(* Runtime option for the disassembled engine *)
-type opt_type =
-  |	CS_OPT_SYNTAX		(*  Asssembly output syntax *)
-  |	CS_OPT_DETAIL		(* Break down instruction structure into details *)
-  |	CS_OPT_MODE		(* Change engine's mode at run-time *)
-  |	CS_OPT_MEM		(* User-defined dynamic memory related functions *)
-  |	CS_OPT_SKIPDATA		(* Skip data when disassembling. Then engine is in SKIPDATA mode. *)
-  |	CS_OPT_SKIPDATA_SETUP 	(* Setup user-defined function for SKIPDATA option *)
+type operand = Cs_const.cs_op
 
+type group = Cs_const.cs_grp
 
-(* Runtime option value (associated with option type above) *)
-let _CS_OPT_OFF = 0L;; (* Turn OFF an option - default option of CS_OPT_DETAIL, CS_OPT_SKIPDATA. *)
-let _CS_OPT_ON = 3L;;  (* Turn ON an option (CS_OPT_DETAIL, CS_OPT_SKIPDATA). *)
-let _CS_OPT_SYNTAX_DEFAULT = 0L;; (* Default asm syntax (CS_OPT_SYNTAX). *)
-let _CS_OPT_SYNTAX_INTEL = 1L;; (* X86 Intel asm syntax - default on X86 (CS_OPT_SYNTAX). *)
-let _CS_OPT_SYNTAX_ATT = 2L;; (* X86 ATT asm syntax (CS_OPT_SYNTAX). *)
-let _CS_OPT_SYNTAX_NOREGNAME = 3L;; (* Prints register name with only number (CS_OPT_SYNTAX) *)
+type handle
 
-(* Common instruction operand types - to be consistent across all architectures. *)
-let _CS_OP_INVALID = 0;;  (* uninitialized/invalid operand. *)
-let _CS_OP_REG     = 1;;  (* Register operand. *)
-let _CS_OP_IMM     = 2;;  (* Immediate operand. *)
-let _CS_OP_MEM     = 3;;  (* Memory operand. *)
-let _CS_OP_FP      = 4;;  (* Floating-Point operand. *)
-
-(* Common instruction groups - to be consistent across all architectures. *)
-let _CS_GRP_INVALID = 0;;  (* uninitialized/invalid group. *)
-let _CS_GRP_JUMP    = 1;;  (* all jump instructions (conditional+direct+indirect jumps) *)
-let _CS_GRP_CALL    = 2;;  (* all call instructions *)
-let _CS_GRP_RET     = 3;;  (* all return instructions *)
-let _CS_GRP_INT     = 4;;  (* all interrupt instructions (int+syscall) *)
-let _CS_GRP_IRET    = 5;;  (* all interrupt return instructions *)
-
-type cs_arch =
-	| CS_INFO_ARM of cs_arm
-	| CS_INFO_ARM64 of cs_arm64
-	| CS_INFO_MIPS of cs_mips
-	| CS_INFO_X86 of cs_x86
-	| CS_INFO_PPC of cs_ppc
-	| CS_INFO_SPARC of cs_sparc
-	| CS_INFO_SYSZ of cs_sysz
-	| CS_INFO_XCORE of cs_xcore
-
-
-type csh = {
-	h: Int64.t;
-	a: arch;
+type t = {
+  handle : handle;
+  arch   : arch;
 }
 
-type cs_insn0 = {
-	id: int;
-	address: int;
-	size: int;
-	bytes: int array;
-	mnemonic: string;
-	op_str: string;
-	regs_read: int array;
-	regs_write: int array;
-	groups: int array;
-	arch: cs_arch;
+type arm_insn = {
+  id         : Arm.Const.arm_ins;
+  address    : int;
+  size       : int;
+  bytes      : bytes;
+  mnemonic   : string;
+  op_str     : string;
+  regs_read  : Arm.Const.arm_reg array;
+  regs_write : Arm.Const.arm_reg array;
+  groups     : insn_group array;
+  detail     : Arm.ins_detail option;
 }
 
-external _cs_open: arch -> mode list -> Int64.t option = "ocaml_open"
-external cs_disasm_quick: arch -> mode list -> string -> Int64.t -> Int64.t -> cs_insn0 list = "ocaml_cs_disasm"
-external _cs_disasm_internal: arch -> Int64.t -> string -> Int64.t -> Int64.t -> cs_insn0 list = "ocaml_cs_disasm_internal"
-external _cs_reg_name: Int64.t -> int -> string = "ocaml_register_name"
-external _cs_insn_name: Int64.t -> int -> string = "ocaml_instruction_name"
-external _cs_group_name: Int64.t -> int -> string = "ocaml_group_name"
-external cs_version: unit -> int = "ocaml_version"
-external _cs_option: Int64.t -> opt_type -> Int64.t -> int = "ocaml_option"
+type arm64_insn = {
+  id         : Arm64.Const.arm64_ins;
+  address    : int;
+  size       : int;
+  bytes      : bytes;
+  mnemonic   : string;
+  op_str     : string;
+  regs_read  : Arm64.Const.arm64_reg array;
+  regs_write : Arm64.Const.arm64_reg array;
+  groups     : insn_group array;
+  detail     : Arm64.ins_detail option;
+}
+
+type mips_insn = {
+  id         : Mips.Const.mips_ins;
+  address    : int;
+  size       : int;
+  bytes      : bytes;
+  mnemonic   : string;
+  op_str     : string;
+  regs_read  : Mips.Const.mips_reg array;
+  regs_write : Mips.Const.mips_reg array;
+  groups     : insn_group array;
+  detail     : Mips.ins_detail option;
+}
+
+type ppc_insn = {
+  id         : Ppc.Const.ppc_ins;
+  address    : int;
+  size       : int;
+  bytes      : bytes;
+  mnemonic   : string;
+  op_str     : string;
+  regs_read  : Ppc.Const.ppc_reg array;
+  regs_write : Ppc.Const.ppc_reg array;
+  groups     : insn_group array;
+  detail     : Ppc.ins_detail option;
+}
+
+type sparc_insn = {
+  id         : Sparc.Const.sparc_ins;
+  address    : int;
+  size       : int;
+  bytes      : bytes;
+  mnemonic   : string;
+  op_str     : string;
+  regs_read  : Sparc.Const.sparc_reg array;
+  regs_write : Sparc.Const.sparc_reg array;
+  groups     : insn_group array;
+  detail     : Sparc.ins_detail option;
+}
+
+type sysz_insn = {
+  id         : Systemz.Const.sysz_ins;
+  address    : int;
+  size       : int;
+  bytes      : bytes;
+  mnemonic   : string;
+  op_str     : string;
+  regs_read  : Systemz.Const.sysz_reg array;
+  regs_write : Systemz.Const.sysz_reg array;
+  groups     : insn_group array;
+  detail     : Sysz.ins_detail option;
+}
+
+type x86_insn = {
+  id         : X86.Const.x86_ins;
+  address    : int;
+  size       : int;
+  bytes      : bytes;
+  mnemonic   : string;
+  op_str     : string;
+  regs_read  : X86.Const.x86_reg array;
+  regs_write : X86.Const.x86_reg array;
+  groups     : insn_group array;
+  detail     : X86.ins_detail option;
+}
+
+type xcore_insn = {
+  id         : Xcore.Const.xcore_ins;
+  address    : int;
+  size       : int;
+  bytes      : bytes;
+  mnemonic   : string;
+  op_str     : string;
+  regs_read  : Xcore.Const.xcore_reg array;
+  regs_write : Xcore.Const.xcore_reg array;
+  groups     : insn_group array;
+  detail     : Xcore.ins_detail option;
+}
+
+type reg = [ Arm.Const.arm_reg
+           | Arm64.Const.arm64_reg
+           | Mips.Const.mips_reg ]
+
+type insn =
+  | ARM_INS of arm_insn
+  | ARM64_INS of arm64_insn
+  | MIPS_INS of mips_insn
+  | PPC_INS of ppc_insn
+  | SPARC_INS of sparc_insn
+  | SYSZ_INS of sysz_insn
+  | X86_INS of x86_insn
+  | XCORE_INS of xcore_insn
+
+external create' : arch:arch -> mode:(mode list) -> handle option = "ml_capstone_create"
+external disasm_quick' : arch:arch -> mode:(mode list) -> bytes -> Int64.t -> Int64.t -> insn list = "ml_capstone_disasm"
+external disasm' : arch -> handle -> bytes -> Int64.t -> Int64.t -> insn list = "ml_capstone_diasm_internal"
+(*  external _cs_disasm_internal: arch -> Int64.t -> string -> Int64.t -> Int64.t -> cs_insn0 list = "ocaml_cs_disasm_internal" *)
+(*
+external reg_name: handle ->  -> string = "ml_capstone_register_name"
+external insn_name: Int64.t -> int -> string = "ml_capstone_instruction_name"
+external group_name: Int64.t -> int -> string = "ml_capstone_group_name"
+*)
+external version: unit -> int = "ml_capstone_version"
+
+external set_option: handle -> opt -> unit = "ml_capstone_option"
+(*
 external _cs_close: Int64.t -> int = "ocaml_close"
+*)
 
 
-let cs_open _arch _mode: csh = (
-	let _handle = _cs_open _arch _mode in (
-	match _handle with
-	| None -> { h = 0L; a = _arch }
-	| Some v -> { h = v; a = _arch }
-	);
-);;
-
-let cs_close handle = (
-	_cs_close handle.h;
-)
-
-let cs_option handle opt value = (
-	_cs_option handle.h opt value;
-);;
-
-let cs_disasm handle code address count = (
-	_cs_disasm_internal handle.a handle.h code address count;
-);;
-
-let cs_reg_name handle id = (
-	_cs_reg_name handle.h id;
-);;
-
-let cs_insn_name handle id = (
-	_cs_insn_name handle.h id;
-);;
-
-let cs_group_name handle id = (
-	_cs_group_name handle.h id;
-);;
-
-class cs_insn c a =
-	let csh = c in
-	let (id, address, size, bytes, mnemonic, op_str, regs_read,
-        regs_write, groups, arch) =
-        (a.id, a.address, a.size, a.bytes, a.mnemonic, a.op_str,
-        a.regs_read, a.regs_write, a.groups, a.arch) in
-	object
-		method id = id;
-		method address = address;
-		method size = size;
-	        method bytes = bytes;
-		method mnemonic = mnemonic;
-		method op_str = op_str;
-		method regs_read = regs_read;
-		method regs_write = regs_write;
-		method groups = groups;
-		method arch = arch;
-		method reg_name id = _cs_reg_name csh.h id;
-		method insn_name id = _cs_insn_name csh.h id;
-		method group_name id = _cs_group_name csh.h id;
-	end;;
-
-let cs_insn_group _handle insn group_id =
-	List.exists (fun g -> g == group_id) (Array.to_list insn.groups);;
-
-let cs_reg_read _handle insn reg_id =
-	List.exists (fun g -> g == reg_id) (Array.to_list insn.regs_read);;
-
-let cs_reg_write _handle insn reg_id =
-	List.exists (fun g -> g == reg_id) (Array.to_list insn.regs_write);;
+let create ?(mode = []) ~arch = match create' ~arch ~mode with
+  | None -> None
+  | Some h -> Some { handle = h; arch }
 
 
-class cs a m =
-	let mode = m and arch = a in
-	let handle = cs_open arch mode in
-	object
-		method disasm code offset count =
-			let insns = (_cs_disasm_internal arch handle.h code offset count) in
-			List.map (fun x -> new cs_insn handle x) insns;
+let disasm ~handle ~addr ?(count = -1L) buf =
+  disasm' handle.arch handle.handle buf addr count
 
-	end;;
+let disasm_quick ~arch ~mode ~addr ?(count = -1L) buf =
+  disasm_quick' ~arch ~mode buf addr count

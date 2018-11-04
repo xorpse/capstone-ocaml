@@ -2,6 +2,7 @@
   (name capstone)
   (public_name capstone)
   (modules capstone
+           cs_const
            arm64_const
            arm64
            arm_const
@@ -19,18 +20,47 @@
            xcore_const
            xcore)
   (wrapped false)
-  (c_names ocaml)
+  (c_names capstone_stubs
+           cs_const_stubs
+           arm64_const_stubs
+           arm_const_stubs
+           mips_const_stubs
+           ppc_const_stubs
+           sparc_const_stubs
+           sysz_const_stubs
+           x86_const_stubs
+           xcore_const_stubs)
   (c_flags (-Wall -Wextra -Wwrite-strings))
   (c_library_flags (-lcapstone)))
 
 (rule
- (targets arm64_const.ml
+ (targets cs_const.ml
+          cs_const_stubs.c
+          cs_const_stubs.h
+          arm64_const.ml
+          arm64_const_stubs.c
+          arm64_const_stubs.h
           arm_const.ml
-	  mips_const.ml
-	  ppc_const.ml
-	  sparc_const.ml
-	  sysz_const.ml
-	  x86_const.ml
-	  xcore_const.ml)
+          arm_const_stubs.c
+          arm_const_stubs.h
+          mips_const.ml
+          mips_const_stubs.c
+          mips_const_stubs.h
+	        ppc_const.ml
+	        ppc_const_stubs.c
+	        ppc_const_stubs.h
+	        sparc_const.ml
+	        sparc_const_stubs.c
+	        sparc_const_stubs.h
+	        sysz_const.ml
+	        sysz_const_stubs.c
+	        sysz_const_stubs.h
+	        x86_const.ml
+	        x86_const_stubs.c
+	        x86_const_stubs.h
+	        xcore_const.ml
+	        xcore_const_stubs.c
+	        xcore_const_stubs.h
+          capstone_poly_var_syms.h)
  (deps    ../const_generator.py)
  (action  (run python %{deps})))
