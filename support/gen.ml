@@ -1,6 +1,3 @@
-module List = ListLabels
-module String = StringLabels
-
 let includes = [
     "capstone.h"; "arm.h"; "arm64.h"; "mips.h"; "ppc.h";
     "sparc.h"; "systemz.h"; "x86.h"; "xcore.h"
@@ -94,18 +91,6 @@ let variant_mapping = Hashtbl.of_seq @@ List.to_seq [
     ];
 ]
 
-let val_int x =
-  let open Int32 in succ @@ shift_left x 1
-
-let caml_hash_variant tag =
-  let open Int32 in
-  let acc = ref 0l in
-  for i = 0 to String.length tag - 1 do
-    acc := add (mul 223l !acc) (of_int @@ Char.code tag.[i])
-  done;
-  acc := logand !acc (pred (shift_left 1l 31));
-  val_int @@ if !acc > 0x3fffffffl then sub !acc (shift_left 1l 31) else !acc
-
 module Syms = struct
   module T = struct
     type t = string * string
@@ -118,6 +103,22 @@ module Syms = struct
   module Map = Map.Make(T)
 end
 
+(* Utility functions *)
+
+let val_int x =
+  let open Int32 in succ @@ shift_left x 1
+
+let caml_hash_variant tag =
+  let open Int32 in
+  let acc = ref 0l in
+  for i = 0 to String.length tag - 1 do
+    acc := add (mul 223l !acc) (of_int @@ Char.code tag.[i])
+  done;
+  acc := logand !acc (pred (shift_left 1l 31));
+  val_int @@ if !acc > 0x3fffffffl then sub !acc (shift_left 1l 31) else !acc
+
+(* Standard library extras to avoid extra build dependencies *)
+
 module Option = struct
   let return v = Some v
   let (>>=) v f = match v with None -> None | Some v' -> f v'
@@ -127,25 +128,43 @@ module Option = struct
   let value_exn = function None -> failwith "no value" | Some v -> v
 end
 
-(* Utility functions *)
+module List = struct
+  include ListLabels
 
-let rec drop n xs =
-  if n > 0 then match xs with
-    | [] -> xs
-    | _ :: xs' -> drop (pred n) xs'
-  else
-    xs
+  let rec drop n xs =
+    if n > 0 then match xs with
+      | [] -> xs
+      | _ :: xs' -> drop (pred n) xs'
+    else
+      xs
 
-let hd_ex = List.hd
-let hd = function [] -> None | x :: _ -> Some x
+  let hd_ex = hd
+  let hd = function [] -> None | x :: _ -> Some x
 
-let rec last_exn = function
-  | [] -> failwith "empty list"
-  | [x] -> x
-  | _ :: xs -> last_exn xs
+  let rec last_exn = function
+    | [] -> failwith "empty list"
+    | [x] -> x
+    | _ :: xs -> last_exn xs
+end
+
+module String = struct
+  include StringLabels
+
+  let starts_with s v =
+    Str.string_match (Str.regexp_string s) v 0
+
+  let ends_with s v =
+    let slen = String.length s in
+    let vlen = String.length v in
+    if slen > vlen then false
+    else Str.string_match (Str.regexp_string s) v (vlen - slen)
+end
+
+(* Other utility functions *)
 
 let is_digit = function '0' .. '9' -> true | _ -> false
 
+(* Trim whitespace, parenthesis, comments *)
 let trim =
   let aux_l = Str.split (Str.regexp "^[ \r\n\t(]+") in
   let aux_r = Str.split (Str.regexp "[ \r\n\t)]+$") in
@@ -153,32 +172,15 @@ let trim =
   let open Option in
   fun v ->
     value ~default: "" (
-      aux_l v |> hd >>= fun v ->
-      aux_c v |> hd >>= fun v ->
-      aux_r v |> hd
+      aux_l v |> List.hd >>= fun v ->
+      aux_c v |> List.hd >>= fun v ->
+      aux_r v |> List.hd
     )
 
-let starts_with s v =
-  Str.string_match (Str.regexp_string s) v 0
-
-let ends_with s v =
-  let slen = String.length s in
-  let vlen = String.length v in
-  if slen > vlen then false
-  else Str.string_match (Str.regexp_string s) v (vlen - slen)
-
+(* Split on whitespace and parenthesis *)
 let split_wsbr =
   let aux = Str.split (Str.regexp "[ \t\r\n()]+") in
   fun v -> aux v
-
-let open_out_file prefix suffix_key =
-  open_out @@ prefix ^ Hashtbl.find template suffix_key
-
-let with_process_in p ~f =
-  let op = Unix.open_process_in p in
-  let v = f op in
-  ignore @@ Unix.close_process_in op;
-  v
 
 let with_file_in p ~f =
   let op = open_in p in
@@ -186,13 +188,17 @@ let with_file_in p ~f =
   ignore @@ close_in op;
   v
 
+(* Open file for given arch [suffix_key] *)
+let open_out_file prefix suffix_key =
+  open_out @@ prefix ^ Hashtbl.find template suffix_key
+
 (* Get type name from enum definition *)
 let get_typename line =
-  if starts_with "typedef" line then (
+  if String.starts_with "typedef" line then (
     match split_wsbr line with
     | _ :: "enum" :: typ :: _ -> Some typ
     | _ -> None
-  ) else if starts_with "enum" line then (
+  ) else if String.starts_with "enum" line then (
     match split_wsbr line with
     | _ :: typ :: _ -> Some typ
     | _ -> None
@@ -202,19 +208,19 @@ let get_typename line =
 (* Update syms and mapper based on current line part [t] *)
 let get_syms ~mapper ~typ ~prefix syms t =
   let open Option in
-  if t == "" || starts_with "//" t then syms
+  if t == "" || String.starts_with "//" t then syms
   else match split_wsbr t with
-    | _ :: sep :: _ when not @@ List.mem sep ~set:["="; "/"; "//"] -> syms
-    | name :: _ when starts_with (String.uppercase_ascii prefix) name -> begin
+    | _ :: sep :: _ when sep <> "=" -> syms
+    | name :: _ when String.starts_with (String.uppercase_ascii prefix) name -> begin
       let sym = String.split_on_char ~sep:'_' name |>
-        drop 2 |>
+        List.drop 2 |>
         String.concat ~sep:"_" |>
         String.uppercase_ascii
       in
 
       let sym = if is_digit sym.[0] then
           let pr = String.split_on_char ~sep:'_' typ |>
-                   last_exn |>
+                   List.last_exn |>
                    String.uppercase_ascii
           in
           pr ^ "_" ^ sym
@@ -229,7 +235,7 @@ let get_syms ~mapper ~typ ~prefix syms t =
       let sym_name = "CAPSTONE_ML_SYM_" ^ (String.uppercase_ascii sym) in
       let lhs = trim name in
 
-      if ends_with "_ENDING" lhs then
+      if String.ends_with "_ENDING" lhs then
         syms
       else match Hashtbl.find_opt mapper typ with
         | None ->
@@ -245,6 +251,7 @@ let get_syms ~mapper ~typ ~prefix syms t =
     end
     | _ -> syms
 
+(* Perform the .ml/.c/.h file generation *)
 let generate () =
   let syms = List.fold_left includes ~init:Syms.Set.empty ~f:(fun syms target ->
       let prefix  = Hashtbl.find template target in
@@ -259,13 +266,13 @@ let generate () =
             match try Some (trim @@ input_line p) with End_of_file -> None with
             | None -> syms
             | Some line ->
-              if line = "" || starts_with "//" line then
+              if line = "" || String.starts_with "//" line then
                 process_lines ?typ syms
               else
                 match get_typename line with
                 | Some typ -> process_lines ~typ syms
                 | _ ->
-                  if not @@ starts_with (String.uppercase_ascii prefix) line then
+                  if not @@ String.starts_with (String.uppercase_ascii prefix) line then
                     process_lines ?typ syms
                   else
                     List.fold_left (List.map ~f:trim @@ String.split_on_char ~sep:',' line)
