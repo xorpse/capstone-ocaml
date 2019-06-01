@@ -115,6 +115,7 @@ module Syms = struct
 
   include T
   module Set = Set.Make(T)
+  module Map = Map.Make(T)
 end
 
 module Option = struct
@@ -135,6 +136,9 @@ let rec drop n xs =
   else
     xs
 
+let hd_ex = List.hd
+let hd = function [] -> None | x :: _ -> Some x
+
 let rec last_exn = function
   | [] -> failwith "empty list"
   | [x] -> x
@@ -143,11 +147,16 @@ let rec last_exn = function
 let is_digit = function '0' .. '9' -> true | _ -> false
 
 let trim =
-  let aux_l = Str.split (Str.regexp "^[ \r\n\t]+") in
-  let aux_r = Str.split (Str.regexp "[ \r\n\t]+$") in
-  fun v -> match aux_l v with
-    | [] -> ""
-    | x :: _ -> List.hd @@ aux_r x
+  let aux_l = Str.split (Str.regexp "^[ \r\n\t(]+") in
+  let aux_r = Str.split (Str.regexp "[ \r\n\t)]+$") in
+  let aux_c = Str.split (Str.regexp "//.*$") in
+  let open Option in
+  fun v ->
+    value ~default: "" (
+      aux_l v |> hd >>= fun v ->
+      aux_c v |> hd >>= fun v ->
+      aux_r v |> hd
+    )
 
 let starts_with s v =
   Str.string_match (Str.regexp_string s) v 0
@@ -158,8 +167,8 @@ let ends_with s v =
   if slen > vlen then false
   else Str.string_match (Str.regexp_string s) v (vlen - slen)
 
-let split_ws =
-  let aux = Str.split (Str.regexp "[ \t\r\n]+") in
+let split_wsbr =
+  let aux = Str.split (Str.regexp "[ \t\r\n()]+") in
   fun v -> aux v
 
 let open_out_file prefix suffix_key =
@@ -171,14 +180,20 @@ let with_process_in p ~f =
   ignore @@ Unix.close_process_in op;
   v
 
+let with_file_in p ~f =
+  let op = open_in p in
+  let v = f op in
+  ignore @@ close_in op;
+  v
+
 (* Get type name from enum definition *)
 let get_typename line =
   if starts_with "typedef" line then (
-    match split_ws line with
+    match split_wsbr line with
     | _ :: "enum" :: typ :: _ -> Some typ
     | _ -> None
   ) else if starts_with "enum" line then (
-    match split_ws line with
+    match split_wsbr line with
     | _ :: typ :: _ -> Some typ
     | _ -> None
   ) else
@@ -188,7 +203,7 @@ let get_typename line =
 let get_syms ~mapper ~typ ~prefix syms t =
   let open Option in
   if t == "" || starts_with "//" t then syms
-  else match split_ws t with
+  else match split_wsbr t with
     | _ :: sep :: _ when not @@ List.mem sep ~set:["="; "/"; "//"] -> syms
     | name :: _ when starts_with (String.uppercase_ascii prefix) name -> begin
       let sym = String.split_on_char ~sep:'_' name |>
@@ -214,19 +229,19 @@ let get_syms ~mapper ~typ ~prefix syms t =
       let sym_name = "CAPSTONE_ML_SYM_" ^ (String.uppercase_ascii sym) in
       let lhs = trim name in
 
-      if Syms.Set.mem (sym_name, sym) syms && Hashtbl.mem mapper typ then
+      if ends_with "_ENDING" lhs then
         syms
-      else
-        let syms = Syms.Set.add (sym_name, sym) syms in
-        if ends_with "_ENDING" lhs then
-          syms
-        else match Hashtbl.find_opt mapper typ with
-          | None ->
-            Hashtbl.add mapper typ [(lhs, sym_name, sym)];
+      else match Hashtbl.find_opt mapper typ with
+        | None ->
+          Syms.Map.singleton (sym_name, sym) lhs |> Hashtbl.add mapper typ;
+          Syms.Set.add (sym_name, sym) syms
+        | Some mt ->
+          if Syms.Map.mem (sym_name, sym) mt then
             syms
-          | Some mt ->
-            Hashtbl.replace mapper typ ((lhs, sym_name, sym) :: mt);
-            syms
+          else (
+            Syms.Map.add (sym_name, sym) lhs mt |> Hashtbl.replace mapper typ;
+            Syms.Set.add (sym_name, sym) syms
+          )
     end
     | _ -> syms
 
@@ -239,7 +254,7 @@ let generate () =
 
       let mapper = Hashtbl.create 100 in
 
-      let syms' = with_process_in ("cpp /usr/include/capstone/" ^ target) ~f:(fun p ->
+      let syms' = with_file_in ("/usr/include/capstone/" ^ target) ~f:(fun p ->
           let rec process_lines ?typ syms =
             match try Some (trim @@ input_line p) with End_of_file -> None with
             | None -> syms
@@ -318,7 +333,7 @@ extern int ml_%s_to_capstone(value v);
 }
 |} k_lower k_lower k_lower;
 
-          List.iter (List.rev v) ~f:(fun (vv, sym_name, sym) ->
+          Syms.Map.iter (fun (sym_name, sym) vv ->
               Printf.bprintf c2ml {|  case %s:
     CAMLreturn(%s);
 |} vv sym_name;
@@ -327,7 +342,7 @@ extern int ml_%s_to_capstone(value v);
 |} sym_name vv;
               Printf.bprintf mlty {|  | `%s
 |} sym;
-            );
+            ) v;
 
           Printf.bprintf c2ml {|  default:
     caml_invalid_argument("ml_capstone_%s: impossible value");
