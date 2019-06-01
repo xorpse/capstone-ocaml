@@ -18,9 +18,9 @@ type opt = [ `Syntax of [ `Default | `Intel | `Att | `Noregname ]
            | `Mode of mode
            | `Skipdata of [ `On | `Off ] ]
 
-type operand = Cs_const.cs_op
+type operand = Cs_const.cs_op_type
 
-type group = Cs_const.cs_grp
+type group = Cs_const.cs_group_type
 
 type handle
 
@@ -30,7 +30,7 @@ type t = {
 }
 
 type arm_insn = {
-  id         : Arm.Const.arm_ins;
+  id         : Arm.Const.arm_insn;
   address    : int;
   size       : int;
   bytes      : bytes;
@@ -38,12 +38,12 @@ type arm_insn = {
   op_str     : string;
   regs_read  : Arm.Const.arm_reg array;
   regs_write : Arm.Const.arm_reg array;
-  groups     : insn_group array;
+  groups     : group array;
   detail     : Arm.ins_detail option;
 }
 
 type arm64_insn = {
-  id         : Arm64.Const.arm64_ins;
+  id         : Arm64.Const.arm64_insn;
   address    : int;
   size       : int;
   bytes      : bytes;
@@ -51,12 +51,12 @@ type arm64_insn = {
   op_str     : string;
   regs_read  : Arm64.Const.arm64_reg array;
   regs_write : Arm64.Const.arm64_reg array;
-  groups     : insn_group array;
+  groups     : group array;
   detail     : Arm64.ins_detail option;
 }
 
 type mips_insn = {
-  id         : Mips.Const.mips_ins;
+  id         : Mips.Const.mips_insn;
   address    : int;
   size       : int;
   bytes      : bytes;
@@ -64,12 +64,12 @@ type mips_insn = {
   op_str     : string;
   regs_read  : Mips.Const.mips_reg array;
   regs_write : Mips.Const.mips_reg array;
-  groups     : insn_group array;
+  groups     : group array;
   detail     : Mips.ins_detail option;
 }
 
 type ppc_insn = {
-  id         : Ppc.Const.ppc_ins;
+  id         : Ppc.Const.ppc_insn;
   address    : int;
   size       : int;
   bytes      : bytes;
@@ -77,12 +77,12 @@ type ppc_insn = {
   op_str     : string;
   regs_read  : Ppc.Const.ppc_reg array;
   regs_write : Ppc.Const.ppc_reg array;
-  groups     : insn_group array;
+  groups     : group array;
   detail     : Ppc.ins_detail option;
 }
 
 type sparc_insn = {
-  id         : Sparc.Const.sparc_ins;
+  id         : Sparc.Const.sparc_insn;
   address    : int;
   size       : int;
   bytes      : bytes;
@@ -90,12 +90,12 @@ type sparc_insn = {
   op_str     : string;
   regs_read  : Sparc.Const.sparc_reg array;
   regs_write : Sparc.Const.sparc_reg array;
-  groups     : insn_group array;
+  groups     : group array;
   detail     : Sparc.ins_detail option;
 }
 
 type sysz_insn = {
-  id         : Systemz.Const.sysz_ins;
+  id         : Systemz.Const.sysz_insn;
   address    : int;
   size       : int;
   bytes      : bytes;
@@ -103,12 +103,12 @@ type sysz_insn = {
   op_str     : string;
   regs_read  : Systemz.Const.sysz_reg array;
   regs_write : Systemz.Const.sysz_reg array;
-  groups     : insn_group array;
+  groups     : group array;
   detail     : Sysz.ins_detail option;
 }
 
 type x86_insn = {
-  id         : X86.Const.x86_ins;
+  id         : X86.Const.x86_insn;
   address    : int;
   size       : int;
   bytes      : bytes;
@@ -116,12 +116,12 @@ type x86_insn = {
   op_str     : string;
   regs_read  : X86.Const.x86_reg array;
   regs_write : X86.Const.x86_reg array;
-  groups     : insn_group array;
+  groups     : group array;
   detail     : X86.ins_detail option;
 }
 
 type xcore_insn = {
-  id         : Xcore.Const.xcore_ins;
+  id         : Xcore.Const.xcore_insn;
   address    : int;
   size       : int;
   bytes      : bytes;
@@ -129,7 +129,7 @@ type xcore_insn = {
   op_str     : string;
   regs_read  : Xcore.Const.xcore_reg array;
   regs_write : Xcore.Const.xcore_reg array;
-  groups     : insn_group array;
+  groups     : group array;
   detail     : Xcore.ins_detail option;
 }
 

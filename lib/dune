@@ -46,21 +46,21 @@
           mips_const.ml
           mips_const_stubs.c
           mips_const_stubs.h
-	        ppc_const.ml
-	        ppc_const_stubs.c
-	        ppc_const_stubs.h
-	        sparc_const.ml
-	        sparc_const_stubs.c
-	        sparc_const_stubs.h
-	        sysz_const.ml
-	        sysz_const_stubs.c
-	        sysz_const_stubs.h
-	        x86_const.ml
-	        x86_const_stubs.c
-	        x86_const_stubs.h
-	        xcore_const.ml
-	        xcore_const_stubs.c
-	        xcore_const_stubs.h
+          ppc_const.ml
+          ppc_const_stubs.c
+          ppc_const_stubs.h
+          sparc_const.ml
+          sparc_const_stubs.c
+          sparc_const_stubs.h
+          sysz_const.ml
+          sysz_const_stubs.c
+          sysz_const_stubs.h
+          x86_const.ml
+          x86_const_stubs.c
+          x86_const_stubs.h
+          xcore_const.ml
+          xcore_const_stubs.c
+          xcore_const_stubs.h
           capstone_poly_var_syms.h)
- (deps    ../const_generator.py)
- (action  (run python %{deps})))
+ (deps    ../support/gen.exe)
+ (action  (run %{deps})))
