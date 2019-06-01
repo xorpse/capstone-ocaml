@@ -95,7 +95,7 @@ module Syms = struct
   module T = struct
     type t = string * string
 
-    let compare = compare
+    let compare x y = compare (fst x) (fst y)
   end
 
   include T
