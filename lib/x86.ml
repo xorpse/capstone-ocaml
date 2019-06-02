@@ -26,7 +26,7 @@ type x86_op = {
 	avx_zero_opmask: int;
 }
 
-type cs_x86 = { 
+type x86_insn_detail = {
 	prefix: int array;
 	opcode: int array;
 	rex: int;

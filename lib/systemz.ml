@@ -21,7 +21,7 @@ type sysz_op = {
 	value: sysz_op_value;
 }
 
-type cs_sysz = { 
+type sysz_insn_detail = {
 	cc: int;
 	operands: sysz_op array;
 }

@@ -38,7 +38,7 @@ type arm_op = {
 	subtracted: bool;
 }
 
-type cs_arm = {
+type arm_insn_detail = {
 	usermode: bool;
 	vector_size: int;
 	vector_data: int;

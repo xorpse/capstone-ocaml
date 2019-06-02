@@ -25,7 +25,7 @@ type ppc_op = {
 	value: ppc_op_value;
 }
 
-type cs_ppc = { 
+type ppc_insn_detail = { 
 	bc: int;
 	bh: int;
 	update_cr0: bool;

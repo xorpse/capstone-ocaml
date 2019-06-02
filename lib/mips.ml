@@ -19,6 +19,6 @@ type mips_op = {
 	value: mips_op_value;
 }
 
-type cs_mips = {
+type mips_insn_detail = {
 	operands: mips_op array;
 }

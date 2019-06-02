@@ -20,7 +20,6 @@ type xcore_op = {
 	value: xcore_op_value;
 }
 
-type cs_xcore = { 
+type xcore_insn_detail = {
 	operands: xcore_op array;
 }
-

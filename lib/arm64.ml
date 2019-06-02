@@ -38,7 +38,7 @@ type arm64_op = {
 	value: arm64_op_value;
 }
 
-type cs_arm64 = {
+type arm64_insn_detail = {
 	cc: int;
 	update_flags: bool;
 	writeback: bool;

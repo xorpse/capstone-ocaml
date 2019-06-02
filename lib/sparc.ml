@@ -19,7 +19,7 @@ type sparc_op = {
 	value: sparc_op_value;
 }
 
-type cs_sparc = { 
+type sparc_insn_detail = {
 	cc: int;
 	hint: int;
 	operands: sparc_op array;

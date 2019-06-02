@@ -3,7 +3,7 @@ module Arm64 = Arm64
 module Mips = Mips
 module Ppc = Ppc
 module Sparc = Sparc
-module Sysz = Sysz
+module Systemz = Systemz
 module X86 = X86
 module Xcore = Xcore
 
@@ -39,7 +39,7 @@ type arm_insn = {
   regs_read  : Arm.Const.arm_reg array;
   regs_write : Arm.Const.arm_reg array;
   groups     : group array;
-  detail     : Arm.ins_detail option;
+  detail     : Arm.arm_insn_detail option;
 }
 
 type arm64_insn = {
@@ -52,7 +52,7 @@ type arm64_insn = {
   regs_read  : Arm64.Const.arm64_reg array;
   regs_write : Arm64.Const.arm64_reg array;
   groups     : group array;
-  detail     : Arm64.ins_detail option;
+  detail     : Arm64.arm64_insn_detail option;
 }
 
 type mips_insn = {
@@ -65,7 +65,7 @@ type mips_insn = {
   regs_read  : Mips.Const.mips_reg array;
   regs_write : Mips.Const.mips_reg array;
   groups     : group array;
-  detail     : Mips.ins_detail option;
+  detail     : Mips.mips_insn_detail option;
 }
 
 type ppc_insn = {
@@ -78,7 +78,7 @@ type ppc_insn = {
   regs_read  : Ppc.Const.ppc_reg array;
   regs_write : Ppc.Const.ppc_reg array;
   groups     : group array;
-  detail     : Ppc.ins_detail option;
+  detail     : Ppc.ppc_insn_detail option;
 }
 
 type sparc_insn = {
@@ -91,7 +91,7 @@ type sparc_insn = {
   regs_read  : Sparc.Const.sparc_reg array;
   regs_write : Sparc.Const.sparc_reg array;
   groups     : group array;
-  detail     : Sparc.ins_detail option;
+  detail     : Sparc.sparc_insn_detail option;
 }
 
 type sysz_insn = {
@@ -104,7 +104,7 @@ type sysz_insn = {
   regs_read  : Systemz.Const.sysz_reg array;
   regs_write : Systemz.Const.sysz_reg array;
   groups     : group array;
-  detail     : Sysz.ins_detail option;
+  detail     : Systemz.sysz_insn_detail option;
 }
 
 type x86_insn = {
@@ -117,7 +117,7 @@ type x86_insn = {
   regs_read  : X86.Const.x86_reg array;
   regs_write : X86.Const.x86_reg array;
   groups     : group array;
-  detail     : X86.ins_detail option;
+  detail     : X86.x86_insn_detail option;
 }
 
 type xcore_insn = {
@@ -130,12 +130,17 @@ type xcore_insn = {
   regs_read  : Xcore.Const.xcore_reg array;
   regs_write : Xcore.Const.xcore_reg array;
   groups     : group array;
-  detail     : Xcore.ins_detail option;
+  detail     : Xcore.xcore_insn_detail option;
 }
 
 type reg = [ Arm.Const.arm_reg
            | Arm64.Const.arm64_reg
-           | Mips.Const.mips_reg ]
+           | Mips.Const.mips_reg
+           | Ppc.Const.ppc_reg
+           | Sparc.Const.sparc_reg
+           | Systemz.Const.sysz_reg
+           | X86.Const.x86_reg
+           | Xcore.Const.xcore_reg ]
 
 type insn =
   | ARM_INS of arm_insn
