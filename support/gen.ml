@@ -21,73 +21,89 @@ let template = Hashtbl.of_seq @@ List.to_seq [
 ]
 
 let variant_mapping = Hashtbl.of_seq @@ List.to_seq [
+    "cs_opt_value", Hashtbl.of_seq @@ List.to_seq [
+      "OFF",              "OFF_SYNTAX_DEFAULT";
+      "SYNTAX_DEFAULT",   "OFF_SYNTAX_DEFAULT";
+      "ON",               "ON_SYNTAX_NOREGNAME";
+      "SYNTAX_NOREGNAME", "ON_SYNTAX_NOREGNAME";
+    ];
     "arm_reg", Hashtbl.of_seq @@ List.to_seq [
-      "r13", "sp_r13";
-      "sp",  "sp_r13";
-      "r14", "lr_r14";
-      "lr",  "lr_r14";
-      "pc",  "pc_r15";
-      "r15", "pc_r15";
-      "r9",  "sb_r9";
-      "sb",  "sb_r9";
-      "r10", "sl_r10";
-      "sl",  "sl_r10";
-      "r12", "ip_r12";
-      "ip",  "ip_r12";
+      "R13", "SP_R13";
+      "SP",  "SP_R13";
+      "R14", "LR_R14";
+      "LR",  "LR_R14";
+      "PC",  "PC_R15";
+      "R15", "PC_R15";
+      "R9",  "SB_R9";
+      "SB",  "SB_R9";
+      "R10", "SL_R10";
+      "SL",  "SL_R10";
+      "R11", "FP_R11";
+      "FP",  "FP_R11";
+      "R12", "IP_R12";
+      "IP",  "IP_R12";
     ];
     "arm64_reg", Hashtbl.of_seq @@ List.to_seq [
-      "ip0", "ip0_x16";
-      "x16", "ip0_x16";
-      "ip1", "ip1_x17";
-      "x17", "ip1_x17";
-      "lr",  "lr_x30";
-      "x30", "lr_x30";
+      "IP0", "IP0_X16";
+      "X16", "IP0_X16";
+      "IP1", "IP1_X17";
+      "X17", "IP1_X17";
+      "FP",  "FP_X29";
+      "X29", "FP_X29";
+      "LR",  "LR_X30";
+      "X30", "LR_X30";
     ];
     "mips_reg", Hashtbl.of_seq @@ List.to_seq [
-     "reg_0",  "zero_r0";     "zero", "zero_r0";
-     "reg_1",  "at_r1";       "at",   "at_r1";
-     "reg_2",  "v0_r2";       "v0",   "v0_r2";
-     "reg_3",  "v1_r3";       "v1",   "v1_r3";
-     "reg_4",  "a0_r4";       "a0",   "a0_r4";
-     "reg_5",  "a1_r5";       "a1",   "a1_r5";
-     "reg_6",  "a2_r6";       "a2",   "a2_r6";
-     "reg_7",  "a3_r7";       "a3",   "a3_r7";
-     "reg_8",  "t0_r8";       "t0",   "t0_r8";
-     "reg_9",  "t1_r9";       "t1",   "t1_r9";
-     "reg_10", "t2_r10";      "t2",   "t2_r10";
-     "reg_11", "t3_r11";      "t3",   "t3_r11";
-     "reg_12", "t4_r12";      "t4",   "t4_r12";
-     "reg_13", "t5_r13";      "t5",   "t5_r13";
-     "reg_14", "t6_r14";      "t6",   "t6_r14";
-     "reg_15", "t7_r15";      "t7",   "t7_r15";
-     "reg_16", "s0_r16";      "s0",   "s0_r16";
-     "reg_17", "s1_r17";      "s1",   "s1_r17";
-     "reg_18", "s2_r18";      "s2",   "s2_r18";
-     "reg_19", "s3_r19";      "s3",   "s3_r19";
-     "reg_20", "s4_r20";      "s4",   "s4_r20";
-     "reg_21", "s5_r21";      "s5",   "s5_r21";
-     "reg_22", "s6_r22";      "s6",   "s6_r22";
-     "reg_23", "s7_r23";      "s7",   "s7_r23";
-     "reg_24", "t8_r24";      "t8",   "t8_r24";
-     "reg_25", "t9_r25";      "t9",   "t9_r25";
-     "reg_26", "k0_r26";      "k0",   "k0_r26";
-     "reg_27", "k1_r27";      "k1",   "k1_r27";
-     "reg_28", "gp_r28";      "gp",   "gp_r28";
-     "reg_29", "sp_r29";      "sp",   "sp_r29";
-     "reg_30", "fp_s8_r30";   "fp",   "fp_s8_r30";   "s8", "fp_s8_r30";
-     "reg_31", "ra_r31";      "ra",   "ra_r31";
-     "ac0",    "lo0_hi0_ac0"; "hi0",  "lo0_hi0_ac0";
-     "ac1",    "lo1_hi1_ac1"; "hi1",  "lo1_hi1_ac1";
-     "ac2",    "lo2_hi2_ac2"; "hi2",  "lo2_hi2_ac2";
-     "ac3",    "lo3_hi3_ac3"; "hi3",  "lo3_hi3_ac3";
-     "hi0",    "lo0_hi0_ac0"; "lo0",  "lo0_hi0_ac0";
-     "hi1",    "lo1_hi1_ac1"; "lo1",  "lo1_hi1_ac1";
-     "hi2",    "lo2_hi2_ac2"; "lo2",  "lo2_hi2_ac2";
-     "hi3",    "lo3_hi3_ac3"; "lo3",  "lo3_hi3_ac3";
+     "REG_0",  "ZERO_R0";     "ZERO", "ZERO_R0";
+     "REG_1",  "AT_R1";       "AT",   "AT_R1";
+     "REG_2",  "V0_R2";       "V0",   "V0_R2";
+     "REG_3",  "V1_R3";       "V1",   "V1_R3";
+     "REG_4",  "A0_R4";       "A0",   "A0_R4";
+     "REG_5",  "A1_R5";       "A1",   "A1_R5";
+     "REG_6",  "A2_R6";       "A2",   "A2_R6";
+     "REG_7",  "A3_R7";       "A3",   "A3_R7";
+     "REG_8",  "T0_R8";       "T0",   "T0_R8";
+     "REG_9",  "T1_R9";       "T1",   "T1_R9";
+     "REG_10", "T2_R10";      "T2",   "T2_R10";
+     "REG_11", "T3_R11";      "T3",   "T3_R11";
+     "REG_12", "T4_R12";      "T4",   "T4_R12";
+     "REG_13", "T5_R13";      "T5",   "T5_R13";
+     "REG_14", "T6_R14";      "T6",   "T6_R14";
+     "REG_15", "T7_R15";      "T7",   "T7_R15";
+     "REG_16", "S0_R16";      "S0",   "S0_R16";
+     "REG_17", "S1_R17";      "S1",   "S1_R17";
+     "REG_18", "S2_R18";      "S2",   "S2_R18";
+     "REG_19", "S3_R19";      "S3",   "S3_R19";
+     "REG_20", "S4_R20";      "S4",   "S4_R20";
+     "REG_21", "S5_R21";      "S5",   "S5_R21";
+     "REG_22", "S6_R22";      "S6",   "S6_R22";
+     "REG_23", "S7_R23";      "S7",   "S7_R23";
+     "REG_24", "T8_R24";      "T8",   "T8_R24";
+     "REG_25", "T9_R25";      "T9",   "T9_R25";
+     "REG_26", "K0_R26";      "K0",   "K0_R26";
+     "REG_27", "K1_R27";      "K1",   "K1_R27";
+     "REG_28", "GP_R28";      "GP",   "GP_R28";
+     "REG_29", "SP_R29";      "SP",   "SP_R29";
+     "REG_30", "FP_S8_R30";   "FP",   "FP_S8_R30";   "S8", "FP_S8_R30";
+     "REG_31", "RA_R31";      "RA",   "RA_R31";
+     "AC0",    "LO0_HI0_AC0"; "HI0",  "LO0_HI0_AC0";
+     "AC1",    "LO1_HI1_AC1"; "HI1",  "LO1_HI1_AC1";
+     "AC2",    "LO2_HI2_AC2"; "HI2",  "LO2_HI2_AC2";
+     "AC3",    "LO3_HI3_AC3"; "HI3",  "LO3_HI3_AC3";
+     "HI0",    "LO0_HI0_AC0"; "LO0",  "LO0_HI0_AC0";
+     "HI1",    "LO1_HI1_AC1"; "LO1",  "LO1_HI1_AC1";
+     "HI2",    "LO2_HI2_AC2"; "LO2",  "LO2_HI2_AC2";
+     "HI3",    "LO3_HI3_AC3"; "LO3",  "LO3_HI3_AC3";
     ];
-    "x86_reg", Hashtbl.of_seq @@ List.to_seq [
-      "repe", "rep_repe";
-      "rep",  "rep_repe";
+    "sparc_reg", Hashtbl.of_seq @@ List.to_seq [
+      "I6", "FP_I6";
+      "FP", "FP_I6";
+      "O6", "SP_O6";
+      "SP", "SP_O6";
+    ];
+    "x86_prefix", Hashtbl.of_seq @@ List.to_seq [
+      "REPE", "REP_REPE";
+      "REP",  "REP_REPE";
     ];
 ]
 
@@ -95,7 +111,7 @@ module Syms = struct
   module T = struct
     type t = string * string
 
-    let compare x y = String.compare (fst x) (fst y)
+    let compare x y = compare (fst x) (fst y)
   end
 
   include T
@@ -320,12 +336,12 @@ let generate () =
 extern int ml_%s_to_capstone(value v);
 |} k_lower k_lower;
 
-          Printf.bprintf c2ml {|value ml_capstone_to_%s(unsigned int v) {
+          Printf.bprintf c2ml {|value ml_capstone_to_%s(int v) {
   CAMLparam0();
   switch (v) {
 |} k_lower;
 
-          Printf.bprintf ml2c {|value ml_capstone_to_%s(int v) {
+          Printf.bprintf ml2c {|int ml_%s_to_capstone(value v) {
   CAMLparam1(v);
   switch (v) {
 |} k_lower;
@@ -385,7 +401,7 @@ extern int ml_%s_to_capstone(value v);
   let ph_file = open_out "capstone_poly_var_syms.h" in
 
   Printf.fprintf ph_file {|#ifndef _CAPSTONE_POLY_VAR_SYMS_H_
-#ifndef _CAPSTONE_POLY_VAR_SYMS_H_
+#define _CAPSTONE_POLY_VAR_SYMS_H_
 |};
 
   Syms.Set.iter (fun (name, sym) ->
