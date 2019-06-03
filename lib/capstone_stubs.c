@@ -81,7 +81,7 @@ CAMLprim value _ml_capstone_disasm(cs_arch arch, csh handle, const uint8_t * cod
 
 #define INSN(LOWER_PREFIX, ARCH_ID) \
 			rec_insn = caml_alloc(10, ARCH_ID); \
-			Store_field(rec_insn, 0, ml_capstone_to_##LOWER_PREFIX##_ins(insn[j-1].id)); \
+			Store_field(rec_insn, 0, ml_capstone_to_##LOWER_PREFIX##_insn(insn[j-1].id)); \
 			Store_field(rec_insn, 1, Val_int(insn[j-1].address)); \
 			Store_field(rec_insn, 2, Val_int(insn[j-1].size)); \
       tmp = caml_alloc_string(insn[j-1].size); \
@@ -557,12 +557,8 @@ CAMLprim value _ml_capstone_disasm(cs_arch arch, csh handle, const uint8_t * cod
                   tmp = caml_alloc(4, 2);
                   Store_field(tmp, 0, Val_int(insn[j-1].detail->x86.operands[i].imm));
                   break;
-                case X86_OP_FP:
-                  tmp = caml_alloc(4, 3);
-                  Store_field(tmp, 0, caml_copy_double(insn[j-1].detail->x86.operands[i].fp));
-                  break;
                 case X86_OP_MEM:
-                  tmp = caml_alloc(4, 4);
+                  tmp = caml_alloc(4, 3);
                   tmp2 = caml_alloc(5, 0);
                   Store_field(tmp2, 0, Val_int(insn[j-1].detail->x86.operands[i].mem.segment));
                   Store_field(tmp2, 1, Val_int(insn[j-1].detail->x86.operands[i].mem.base));
@@ -733,14 +729,10 @@ CAMLprim value ml_capstone_create(value _mode, value _arch)
 CAMLprim value ml_capstone_option(value _handle, value _opt)
 {
 	CAMLparam2(_handle, _opt);
-	cs_opt_type opt;
-  unsigned int val;
-	int err;
 
-  opt = ml_capstone_to_cs_opt(Field(_opt, 0));
-  val = ml_capstone_to_cs_opt(Field(_opt, 1));
-
-  err = cs_option(*Capstone_handle_val(_handle), opt, val);
+  cs_opt_type opt = ml_capstone_to_cs_opt_type(Field(_opt, 0));
+  int val = ml_capstone_to_cs_opt_value(Field(_opt, 1));
+  int err = cs_option(*Capstone_handle_val(_handle), opt, val);
 
   if (err != CS_ERR_OK) {
     caml_raise_with_arg(*caml_named_value("Capstone_error"), ml_cs_err_to_capstone(err));

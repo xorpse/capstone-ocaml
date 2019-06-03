@@ -21,6 +21,37 @@ let template = Hashtbl.of_seq @@ List.to_seq [
 ]
 
 let variant_mapping = Hashtbl.of_seq @@ List.to_seq [
+    "cs_mode", Hashtbl.of_seq @@ List.to_seq [
+      "LITTLE_ENDIAN", "LITTLE_ENDIAN_ARM";
+      "ARM",           "LITTLE_ENDIAN_ARM";
+      "MODE_16",       "MODE_16_M68K_000_M680X_6301";
+      "M68K_000",      "MODE_16_M68K_000_M680X_6301";
+      "M680X_6301",    "MODE_16_M68K_000_M680X_6301";
+      "MODE_32",       "MODE_32_M68K_010_MIPS32_M680X_6309";
+      "M68K_010",      "MODE_32_M68K_010_MIPS32_M680X_6309";
+      "MIPS32",        "MODE_32_M68K_010_MIPS32_M680X_6309";
+      "M680X_6309",    "MODE_32_M68K_010_MIPS32_M680X_6309";
+      "MODE_64",       "MODE_64_M68K_020_MIPS64_M680X_6800";
+      "M68K_020",      "MODE_64_M68K_020_MIPS64_M680X_6800";
+      "MIPS64",        "MODE_64_M68K_020_MIPS64_M680X_6800";
+      "M680X_6800",    "MODE_64_M68K_020_MIPS64_M680X_6800";
+      "THUMB",         "THUMB_MICRO_V9_QPX_M68K_030_M680X_6801";
+      "MICRO",         "THUMB_MICRO_V9_QPX_M68K_030_M680X_6801";
+      "V9",            "THUMB_MICRO_V9_QPX_M68K_030_M680X_6801";
+      "QPX",           "THUMB_MICRO_V9_QPX_M68K_030_M680X_6801";
+      "M68K_030",      "THUMB_MICRO_V9_QPX_M68K_030_M680X_6801";
+      "M680X_6801",    "THUMB_MICRO_V9_QPX_M68K_030_M680X_6801";
+      "MCLASS",        "MCLASS_MIPS3_M68K_040_M680X_6805";
+      "MIPS3",         "MCLASS_MIPS3_M68K_040_M680X_6805";
+      "M68K_040",      "MCLASS_MIPS3_M68K_040_M680X_6805";
+      "M680X_6805",    "MCLASS_MIPS3_M68K_040_M680X_6805";
+      "V8",            "V8_MIPS32R6_M68K_060_M680X_6808";
+      "MIPS32R6",      "V8_MIPS32R6_M68K_060_M680X_6808";
+      "M68K_060",      "V8_MIPS32R6_M68K_060_M680X_6808";
+      "M680X_6808",    "V8_MIPS32R6_M68K_060_M680X_6808";
+      "MIPS2",         "MIPS2_M680X_6809";
+      "M680X_6809",    "MIPS2_M680X_6809";
+    ];
     "cs_opt_value", Hashtbl.of_seq @@ List.to_seq [
       "OFF",              "OFF_SYNTAX_DEFAULT";
       "SYNTAX_DEFAULT",   "OFF_SYNTAX_DEFAULT";
