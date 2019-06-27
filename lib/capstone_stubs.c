@@ -22,8 +22,8 @@
 #include "cs_const_stubs.h"
 #include "capstone_poly_var_syms.h"
 
-#define ARR_SIZE(a) (sizeof(a)/sizeof(a[0]))
-#define Capstone_handle_val(v) (*(csh **)Data_custom_val(v))
+#define ARR_SIZE(a) (sizeof(a) / sizeof(*a))
+#define Capstone_handle_val(v) ((csh *)Data_custom_val(v))
 
 static void ml_capstone_finalise_handle(value h) {
   CAMLparam1(h);
@@ -61,7 +61,47 @@ static unsigned int list_count(uint8_t *list, unsigned int max)
 	return max;
 }
 
-CAMLprim value _ml_capstone_disasm(cs_arch arch, csh handle, const uint8_t * code, size_t code_len, uint64_t addr, size_t count)
+CAMLprim value ml_capstone_create(value _arch, value _mode)
+{
+	CAMLparam2(_arch, _mode);
+	CAMLlocal2(head, result);
+	csh handle;
+	cs_arch arch;
+	cs_mode mode = 0;
+
+  arch = ml_cs_arch_to_capstone(_arch);
+
+  while (_mode != Val_emptylist) {
+    head = Field(_mode, 0);
+    mode |= ml_cs_mode_to_capstone(head);
+    _mode = Field(_mode, 1);
+  }
+
+	if (cs_open(arch, mode, &handle) != 0) {
+    CAMLreturn(Val_int(0)); // None
+  }
+
+	result = caml_alloc(1, 0);
+	Store_field(result, 0, ml_capstone_alloc_handle(&handle)); // Some handle 
+	CAMLreturn(result);
+}
+
+CAMLprim value ml_capstone_set_option(value _handle, value _opt, value _val)
+{
+	CAMLparam3(_handle, _opt, _val);
+
+  cs_opt_type opt = ml_cs_opt_type_to_capstone(_opt);
+  int val = ml_cs_opt_value_to_capstone(_val);
+  int err = cs_option(*Capstone_handle_val(_handle), opt, val);
+
+  if (err != CS_ERR_OK) {
+    caml_raise_with_arg(*caml_named_value("Capstone_error"), ml_cs_err_to_capstone(err));
+  }
+
+	CAMLreturn(Val_unit);
+}
+
+CAMLprim value ml_capstone_disassemble_inner(cs_arch arch, csh handle, const uint8_t * code, size_t code_len, uint64_t addr, size_t count)
 {
 	CAMLparam0();
 	CAMLlocal5(list, cons, rec_insn, array, tmp);
@@ -73,14 +113,13 @@ CAMLprim value _ml_capstone_disasm(cs_arch arch, csh handle, const uint8_t * cod
 
 	c = cs_disasm(handle, code, code_len, addr, count, &insn);
 	if (c) {
-		//printf("Found %lu insn, addr: %lx\n", c, addr);
 		uint64_t j;
 		for (j = c; j > 0; j--) {
 			unsigned int lcount, i;
 			cons = caml_alloc(2, 0);
 
-#define INSN(LOWER_PREFIX, ARCH_ID) \
-			rec_insn = caml_alloc(10, ARCH_ID); \
+#define INSN(LOWER_PREFIX, TAG) \
+			rec_insn = caml_alloc(10, TAG); \
 			Store_field(rec_insn, 0, ml_capstone_to_##LOWER_PREFIX##_insn(insn[j-1].id)); \
 			Store_field(rec_insn, 1, Val_int(insn[j-1].address)); \
 			Store_field(rec_insn, 2, Val_int(insn[j-1].size)); \
@@ -206,7 +245,7 @@ CAMLprim value _ml_capstone_disasm(cs_arch arch, csh handle, const uint8_t * cod
         break;
       }
       case CS_ARCH_ARM64: {
-        INSN(arm64, 1)
+        INSN(arm64, 0)
         if (insn[j-1].detail) {
           detail_opt = caml_alloc(1, 0); // Some
           op_info_val = caml_alloc(4, 0);
@@ -296,7 +335,7 @@ CAMLprim value _ml_capstone_disasm(cs_arch arch, csh handle, const uint8_t * cod
         break;
       }
       case CS_ARCH_MIPS: {
-        INSN(mips, 2)
+        INSN(mips, 0)
         if (insn[j-1].detail) {
           detail_opt = caml_alloc(1, 0); // Some
           op_info_val = caml_alloc(1, 0);
@@ -340,7 +379,7 @@ CAMLprim value _ml_capstone_disasm(cs_arch arch, csh handle, const uint8_t * cod
         break;
       }
       case CS_ARCH_PPC: {
-        INSN(ppc, 3)
+        INSN(ppc, 0)
         if (insn[j-1].detail) {
           detail_opt = caml_alloc(1, 0); // Some
           op_info_val = caml_alloc(4, 0);
@@ -396,7 +435,7 @@ CAMLprim value _ml_capstone_disasm(cs_arch arch, csh handle, const uint8_t * cod
         break;
       }
       case CS_ARCH_SPARC: {
-        INSN(sparc, 4)
+        INSN(sparc, 0)
         if (insn[j-1].detail) {
           detail_opt = caml_alloc(1, 0); // Some
           op_info_val = caml_alloc(3, 0);
@@ -444,7 +483,7 @@ CAMLprim value _ml_capstone_disasm(cs_arch arch, csh handle, const uint8_t * cod
         break;
       }
       case CS_ARCH_SYSZ: {
-        INSN(sysz, 5)
+        INSN(sysz, 0)
         if (insn[j-1].detail) {
           detail_opt = caml_alloc(1, 0); // Some
           op_info_val = caml_alloc(2, 0);
@@ -496,7 +535,7 @@ CAMLprim value _ml_capstone_disasm(cs_arch arch, csh handle, const uint8_t * cod
         break;
       }
       case CS_ARCH_X86: {
-        INSN(x86, 6)
+        INSN(x86, 0)
         if (insn[j-1].detail) {
           detail_opt = caml_alloc(1, 0); // Some
           op_info_val = caml_alloc(15, 0);
@@ -590,7 +629,7 @@ CAMLprim value _ml_capstone_disasm(cs_arch arch, csh handle, const uint8_t * cod
         break;
       }
       case CS_ARCH_XCORE: {
-        INSN(xcore, 7)
+        INSN(xcore, 0)
         if (insn[j-1].detail) {
           detail_opt = caml_alloc(1, 0); // Some
           op_info_val = caml_alloc(1, 0);
@@ -643,47 +682,13 @@ CAMLprim value _ml_capstone_disasm(cs_arch arch, csh handle, const uint8_t * cod
 			Store_field(cons, 1, list);		// tail
 			list = cons;
 		}
-		cs_free(insn, count);
+		cs_free(insn, c);
 	}
 
-	// do not free the handle here
-	//cs_close(&handle);
 	CAMLreturn(list);
 }
 
-CAMLprim value ml_capstone_disasm(value _arch, value _mode, value _code, value _addr, value _count)
-{
-	CAMLparam5(_arch, _mode, _code, _addr, _count);
-	CAMLlocal1(head);
-	csh handle;
-	cs_arch arch;
-	cs_mode mode = 0;
-	const uint8_t *code;
-	uint64_t addr;
-	size_t count, code_len;
-
-  arch = ml_capstone_to_cs_arch(_arch);
-
-	while (_mode != Val_emptylist) {
-		head = Field(_mode, 0);  /* accessing the head */
-    mode |= ml_capstone_to_cs_mode(head);
-		_mode = Field(_mode, 1);  /* point to the tail for next loop */
-	}
-
-	cs_err ret = cs_open(arch, mode, &handle);
-	if (ret != CS_ERR_OK) {
-    caml_raise_with_arg(*caml_named_value("Capstone_error"), ml_cs_err_to_capstone(ret));
-	}
-
-	code = (uint8_t *)String_val(_code);
-	code_len = caml_string_length(_code);
-	addr = Int64_val(_addr);
-	count = Int64_val(_count);
-
-	CAMLreturn(_ml_capstone_disasm(arch, handle, code, code_len, addr, count));
-}
-
-CAMLprim value ml_capstone_disasm_internal(value _arch, value _handle, value _code, value _addr, value _count)
+CAMLprim value ml_capstone_disassemble(value _arch, value _handle, value _code, value _addr, value _count)
 {
 	CAMLparam5(_arch, _handle, _code, _addr, _count);
 	csh handle;
@@ -692,93 +697,18 @@ CAMLprim value ml_capstone_disasm_internal(value _arch, value _handle, value _co
 	uint64_t addr, count, code_len;
 
 	handle = *Capstone_handle_val(_handle);
-
-	arch = Int_val(_arch);
+  arch = ml_cs_arch_to_capstone(_arch);
 	code = (uint8_t *)String_val(_code);
 	code_len = caml_string_length(_code);
 	addr = Int64_val(_addr);
 	count = Int64_val(_count);
 
-	CAMLreturn(_ml_capstone_disasm(arch, handle, code, code_len, addr, count));
+	CAMLreturn(ml_capstone_disassemble_inner(arch, handle, code, code_len, addr, count));
 }
 
-CAMLprim value ml_capstone_create(value _mode, value _arch)
-{
-	CAMLparam2(_mode, _arch);
-	CAMLlocal2(head, result);
-	csh handle;
-	cs_arch arch;
-	cs_mode mode = 0;
-
-  arch = ml_capstone_to_cs_arch(_arch);
-
-  while (_mode != Val_emptylist) {
-    head = Field(_mode, 0);  /* accessing the head */
-    mode |= ml_capstone_to_cs_mode(head);
-    _mode = Field(_mode, 1);  /* point to the tail for next loop */
-  }
-
-	if (cs_open(arch, mode, &handle) != 0)
-		CAMLreturn(Val_int(0));
-
-	result = caml_alloc(1, 0);
-	Store_field(result, 0, ml_capstone_alloc_handle(&handle));
-	CAMLreturn(result);
-}
-
-CAMLprim value ml_capstone_option(value _handle, value _opt)
-{
-	CAMLparam2(_handle, _opt);
-
-  cs_opt_type opt = ml_capstone_to_cs_opt_type(Field(_opt, 0));
-  int val = ml_capstone_to_cs_opt_value(Field(_opt, 1));
-  int err = cs_option(*Capstone_handle_val(_handle), opt, val);
-
-  if (err != CS_ERR_OK) {
-    caml_raise_with_arg(*caml_named_value("Capstone_error"), ml_cs_err_to_capstone(err));
-  }
-
-	CAMLreturn(Val_unit);
-}
-
-/*
-CAMLprim value ml_capstone_register_name(value _handle, value _reg)
-{
-	CAMLparam2(_handle, _reg);
-	const char *name = cs_reg_name(*Capstone_handle_val(_handle), Int_val(_reg));
-	if (!name) {
-		caml_invalid_argument("invalid reg_id");
-	}
-
-	CAMLreturn(caml_copy_string(name));
-}
-
-CAMLprim value ml_capstone_instruction_name(value _handle, value _insn)
-{
-	CAMLparam2(_handle, _insn);
-	const char *name = cs_insn_name(*Capstone_handle_val(_handle), Int_val(_insn));
-	if (!name) {
-		caml_invalid_argument("invalid insn_id");
-	}
-
-	CAMLreturn(caml_copy_string(name));
-}
-
-CAMLprim value ml_capstone_group_name(value _handle, value _insn)
-{
-	CAMLparam2(_handle, _insn);
-	const char *name = cs_group_name(*Capstone_handle_val(_handle), Int_val(_insn));
-	if (!name) {
-		caml_invalid_argument("invalid insn_id");
-	}
-
-	CAMLreturn(caml_copy_string(name));
-}
-*/
 
 CAMLprim value ml_capstone_version(void)
 {
 	CAMLparam0();
-	int version = cs_version(NULL, NULL);
-	CAMLreturn(Val_int(version));
+	CAMLreturn(Val_int(cs_version(NULL, NULL)));
 }
