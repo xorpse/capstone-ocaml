@@ -576,7 +576,7 @@ CAMLprim value ml_capstone_disassemble_inner(cs_arch arch, csh handle, const uin
 
           Store_field(op_info_val, 8, Val_int(insn[j-1].detail->x86.sib_scale));
 
-          Store_field(op_info_val, 9, Val_int(insn[j-1].detail->x86.sib_base));
+          Store_field(op_info_val, 9, ml_capstone_to_x86_reg(insn[j-1].detail->x86.sib_base));
 
           Store_field(op_info_val, 10, Val_int(insn[j-1].detail->x86.sse_cc));
           Store_field(op_info_val, 11, Val_int(insn[j-1].detail->x86.avx_cc));
@@ -589,32 +589,33 @@ CAMLprim value ml_capstone_disassemble_inner(cs_arch arch, csh handle, const uin
             for (i = 0; i < lcount; i++) {
               switch(insn[j-1].detail->x86.operands[i].type) {
                 case X86_OP_REG:
-                  tmp = caml_alloc(1, 1);
-                  Store_field(tmp, 0, Val_int(insn[j-1].detail->x86.operands[i].reg));
+                  tmp = ml_capstone_to_x86_reg(insn[j-1].detail->x86.operands[i].reg);
                   break;
                 case X86_OP_IMM:
-                  tmp = caml_alloc(1, 2);
-                  Store_field(tmp, 0, Val_int(insn[j-1].detail->x86.operands[i].imm));
+                  tmp = caml_alloc(2, 0);
+                  Store_field(tmp, 0, caml_hash_variant("IMM"));
+                  Store_field(tmp, 1, caml_copy_int64(insn[j-1].detail->x86.operands[i].imm));
                   break;
                 case X86_OP_MEM:
-                  tmp = caml_alloc(1, 3);
+                  tmp = caml_alloc(2, 0);
                   tmp2 = caml_alloc(5, 0);
-                  Store_field(tmp2, 0, Val_int(insn[j-1].detail->x86.operands[i].mem.segment));
-                  Store_field(tmp2, 1, Val_int(insn[j-1].detail->x86.operands[i].mem.base));
-                  Store_field(tmp2, 2, Val_int(insn[j-1].detail->x86.operands[i].mem.index));
+                  Store_field(tmp2, 0, ml_capstone_to_x86_reg(insn[j-1].detail->x86.operands[i].mem.segment));
+                  Store_field(tmp2, 1, ml_capstone_to_x86_reg(insn[j-1].detail->x86.operands[i].mem.base));
+                  Store_field(tmp2, 2, ml_capstone_to_x86_reg(insn[j-1].detail->x86.operands[i].mem.index));
                   Store_field(tmp2, 3, Val_int(insn[j-1].detail->x86.operands[i].mem.scale));
-                  Store_field(tmp2, 4, Val_int(insn[j-1].detail->x86.operands[i].mem.disp));
+                  Store_field(tmp2, 4, caml_copy_int64(insn[j-1].detail->x86.operands[i].mem.disp));
 
-                  Store_field(tmp, 0, tmp2);
+                  Store_field(tmp, 0, caml_hash_variant("MEM"));
+                  Store_field(tmp, 1, tmp2);
                   break;
                 default:
-                  break;
+                  tmp = caml_hash_variant("INVALID");
               }
 
               tmp2 = caml_alloc(4, 0);
               Store_field(tmp2, 0, tmp);
               Store_field(tmp2, 1, Val_int(insn[j-1].detail->x86.operands[i].size));
-              Store_field(tmp2, 2, Val_int(insn[j-1].detail->x86.operands[i].avx_bcast));
+              Store_field(tmp2, 2, ml_capstone_to_x86_avx_bcast(insn[j-1].detail->x86.operands[i].avx_bcast));
               Store_field(tmp2, 3, Val_int(insn[j-1].detail->x86.operands[i].avx_zero_opmask));
 
               Store_field(array, i, tmp2);

@@ -5,23 +5,23 @@ module Const = X86_const
 
 (* architecture specific info of instruction *)
 type x86_op_mem = {
-	segment: int;
-	base: int;
-	index: int;
+	segment: Const.x86_reg;
+	base: Const.x86_reg;
+	index: Const.x86_reg;
 	scale: int;
-	disp: int;
+	disp: int64;
 }
 
-type x86_op_value =
-	| X86_OP_INVALID of int
-	| X86_OP_REG of int
-	| X86_OP_IMM of int
-	| X86_OP_MEM of x86_op_mem
+type x86_op_value = [ `INVALID
+                    | `IMM of int64
+                    | `MEM of x86_op_mem
+                    | Const.x86_reg
+                    ]
 
 type x86_op = {
 	value: x86_op_value;
 	size: int;
-	avx_bcast: int;
+	avx_bcast: Const.x86_avx_bcast;
 	avx_zero_opmask: int;
 }
 
@@ -35,7 +35,7 @@ type x86_insn_detail = {
 	disp: int;
 	sib_index: int;
 	sib_scale: int;
-	sib_base: int;
+	sib_base: Const.x86_reg;
 	sse_cc: int;
 	avx_cc: int;
 	avx_sae: int;
