@@ -91,7 +91,7 @@ CAMLprim value ml_capstone_set_option(value _handle, value _opt, value _val)
 	CAMLparam3(_handle, _opt, _val);
 
   cs_opt_type opt = ml_cs_opt_type_to_capstone(_opt);
-  int val = ml_cs_opt_value_to_capstone(_val);
+  int val = (opt == CS_OPT_MODE) ? ml_cs_mode_to_capstone(_val) : ml_cs_opt_value_to_capstone(_val);
   int err = cs_option(*Capstone_handle_val(_handle), opt, val);
 
   if (err != CS_ERR_OK) {

@@ -11,13 +11,6 @@ exception Capstone_error of Cs_const.cs_err
 
 type arch = [ `Arm | `Arm64 | `Mips | `Ppc | `Sparc | `Sysz | `X86 | `Xcore ]
 
-type mode = Cs_const.cs_mode
-
-type opt = [ `Syntax of [ `Default | `Intel | `Att | `Noregname ]
-           | `Detail of [ `On | `Off ]
-           | `Mode of mode
-           | `Skipdata of [ `On | `Off ] ]
-
 type operand = Cs_const.cs_op_type
 
 type group = Cs_const.cs_group_type
@@ -137,7 +130,74 @@ type reg = [ Arm.Const.arm_reg
            | X86.Const.x86_reg
            | Xcore.Const.xcore_reg ]
 
-external create_ffi : arch:Cs_const.cs_arch -> mode:(mode list) -> handle option = "ml_capstone_create"
+type mode =
+  [ `LITTLE_ENDIAN
+  | `ARM
+  | `MODE_16
+  | `M68K_000
+  | `M680X_6301
+  | `MODE_32
+  | `M68K_010
+  | `MIPS32
+  | `M680X_6309
+  | `MODE_64
+  | `M68K_020
+  | `MIPS64
+  | `M680X_6800
+  | `THUMB
+  | `MICRO
+  | `V9
+  | `QPX
+  | `M68K_030
+  | `M680X_6801
+  | `MCLASS
+  | `MIPS3
+  | `M68K_040
+  | `M680X_6805
+  | `V8
+  | `MIPS32R6
+  | `M68K_060
+  | `M680X_6808
+  | `MIPS2
+  | `M680X_6809 ]
+
+type opt = [ `Syntax of [ `Default | `Intel | `Att | `Noregname ]
+           | `Detail of [ `On | `Off ]
+           | `Mode of mode
+           | `Skipdata of [ `On | `Off ] ]
+
+let mode_to_cs_mode = function
+  | `LITTLE_ENDIAN -> `LITTLE_ENDIAN_ARM
+  | `ARM -> `LITTLE_ENDIAN_ARM
+  | `MODE_16 -> `MODE_16_M68K_000_M680X_6301
+  | `M68K_000 -> `MODE_16_M68K_000_M680X_6301
+  | `M680X_6301 -> `MODE_16_M68K_000_M680X_6301
+  | `MODE_32 -> `MODE_32_M68K_010_MIPS32_M680X_6309
+  | `M68K_010 -> `MODE_32_M68K_010_MIPS32_M680X_6309
+  | `MIPS32 -> `MODE_32_M68K_010_MIPS32_M680X_6309
+  | `M680X_6309 -> `MODE_32_M68K_010_MIPS32_M680X_6309
+  | `MODE_64 -> `MODE_64_M68K_020_MIPS64_M680X_6800
+  | `M68K_020 -> `MODE_64_M68K_020_MIPS64_M680X_6800
+  | `MIPS64 -> `MODE_64_M68K_020_MIPS64_M680X_6800
+  | `M680X_6800 -> `MODE_64_M68K_020_MIPS64_M680X_6800
+  | `THUMB -> `THUMB_MICRO_V9_QPX_M68K_030_M680X_6801
+  | `MICRO -> `THUMB_MICRO_V9_QPX_M68K_030_M680X_6801
+  | `V9 -> `THUMB_MICRO_V9_QPX_M68K_030_M680X_6801
+  | `QPX -> `THUMB_MICRO_V9_QPX_M68K_030_M680X_6801
+  | `M68K_030 -> `THUMB_MICRO_V9_QPX_M68K_030_M680X_6801
+  | `M680X_6801 -> `THUMB_MICRO_V9_QPX_M68K_030_M680X_6801
+  | `MCLASS -> `MCLASS_MIPS3_M68K_040_M680X_6805
+  | `MIPS3 -> `MCLASS_MIPS3_M68K_040_M680X_6805
+  | `M68K_040 -> `MCLASS_MIPS3_M68K_040_M680X_6805
+  | `M680X_6805 -> `MCLASS_MIPS3_M68K_040_M680X_6805
+  | `V8 -> `V8_MIPS32R6_M68K_060_M680X_6808
+  | `MIPS32R6 -> `V8_MIPS32R6_M68K_060_M680X_6808
+  | `M68K_060 -> `V8_MIPS32R6_M68K_060_M680X_6808
+  | `M680X_6808 -> `V8_MIPS32R6_M68K_060_M680X_6808
+  | `MIPS2 -> `MIPS2_M680X_6809
+  | `M680X_6809 -> `MIPS2_M680X_6809
+
+external create_ffi : arch:Cs_const.cs_arch -> mode:(Cs_const.cs_mode list) -> handle option = "ml_capstone_create"
 
 external disasm_arm_ffi : Cs_const.cs_arch -> handle -> bytes -> Int64.t -> Int64.t -> arm_insn list = "ml_capstone_disassemble"
 external disasm_arm64_ffi : Cs_const.cs_arch -> handle -> bytes -> Int64.t -> Int64.t -> arm64_insn list = "ml_capstone_disassemble"
@@ -148,7 +208,7 @@ external disasm_sysz_ffi : Cs_const.cs_arch -> handle -> bytes -> Int64.t -> Int
 external disasm_x86_ffi : Cs_const.cs_arch -> handle -> bytes -> Int64.t -> Int64.t -> x86_insn list = "ml_capstone_disassemble"
 external disasm_xcore_ffi : Cs_const.cs_arch -> handle -> bytes -> Int64.t -> Int64.t -> xcore_insn list = "ml_capstone_disassemble"
 
-external set_option: handle -> Cs_const.cs_opt_type -> Cs_const.cs_opt_value -> unit = "ml_capstone_set_option"
+external set_option_ffi: handle -> Cs_const.cs_opt_type -> [ Cs_const.cs_opt_value | Cs_const.cs_mode ] -> unit = "ml_capstone_set_option"
 external version: unit -> int = "ml_capstone_version"
 
 module Arch = struct
@@ -193,7 +253,7 @@ let create (type a) ?(mode : mode list = []) (arch : a Arch.t) : a t option =
     | Arch.X86 -> `X86
     | Arch.Xcore -> `XCORE
   in
-  match create_ffi ~arch:arch' ~mode with
+  match create_ffi ~arch:arch' ~mode:(List.map mode_to_cs_mode mode) with
   | Some h -> Some (T (arch, h))
   | None -> None
 
@@ -209,13 +269,13 @@ let set_option t opt =
       (`DETAIL, match v with
         | `On -> `ON_SYNTAX_NOREGNAME
         | `Off -> `OFF_SYNTAX_DEFAULT)
-    | `Mode m -> (`MODE, m)
+    | `Mode m -> (`MODE, mode_to_cs_mode m)
     | `Skipdata v ->
       (`SKIPDATA, match v with
         | `On -> `ON_SYNTAX_NOREGNAME
         | `Off -> `OFF_SYNTAX_DEFAULT)
   in
-  set_option (handle t) opt value
+  set_option_ffi (handle t) opt value
 
 let disassemble_only ~arch ~mode ~addr ?(count = -1L) buf =
   match create ~mode arch with
