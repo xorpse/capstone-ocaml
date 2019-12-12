@@ -1,140 +1,130 @@
 let includes = [
-    "capstone.h"; "arm.h"; "arm64.h"; "mips.h"; "ppc.h";
-    "sparc.h"; "systemz.h"; "x86.h"; "xcore.h"
+  "capstone.h"; "arm.h"; "arm64.h"; "evm.h"; "m680x.h"; "m68k.h";
+  "mips.h"; "ppc.h"; "sparc.h"; "systemz.h"; "tms320c64x.h"; "x86.h";
+  "xcore.h"
 ]
 
 let template = Hashtbl.of_seq @@ List.to_seq [
     (* filename templates *)
-    "ml_suffix",  "_const.ml";
-    "c_suffix",   "_const_stubs.c";
-    "h_suffix",   "_const_stubs.h";
+    "ml_suffix",    "_const.ml";
+    "c_suffix",     "_const_stubs.c";
+    "h_suffix",     "_const_stubs.h";
     (* header to module mapping *)
-    "capstone.h", "cs";
-    "arm.h",      "arm";
-    "arm64.h",    "arm64";
-    "mips.h",     "mips";
-    "ppc.h",      "ppc";
-    "sparc.h",    "sparc";
-    "systemz.h",  "sysz";
-    "x86.h",      "x86";
-    "xcore.h",    "xcore";
+    "capstone.h",   "cs";
+    "arm.h",        "arm";
+    "arm64.h",      "arm64";
+    "evm.h",        "evm";
+    "m680x.h",      "m680x";
+    "m68k.h",       "m68k";
+    "mips.h",       "mips";
+    "ppc.h",        "ppc";
+    "sparc.h",      "sparc";
+    "systemz.h",    "sysz";
+    "tms320c64x.h", "tms320c64x";
+    "x86.h",        "x86";
+    "xcore.h",      "xcore";
 ]
+
+(* if not in [variant_mapping] then in variant;
+   for vals if in [variant_mapping] then map to value
+*)
 
 let variant_mapping = Hashtbl.of_seq @@ List.to_seq [
     "cs_mode", Hashtbl.of_seq @@ List.to_seq [
-      "LITTLE_ENDIAN", "LITTLE_ENDIAN_ARM";
-      "ARM",           "LITTLE_ENDIAN_ARM";
-      "MODE_16",       "MODE_16_M68K_000_M680X_6301";
-      "M68K_000",      "MODE_16_M68K_000_M680X_6301";
-      "M680X_6301",    "MODE_16_M68K_000_M680X_6301";
-      "MODE_32",       "MODE_32_M68K_010_MIPS32_M680X_6309";
-      "M68K_010",      "MODE_32_M68K_010_MIPS32_M680X_6309";
-      "MIPS32",        "MODE_32_M68K_010_MIPS32_M680X_6309";
-      "M680X_6309",    "MODE_32_M68K_010_MIPS32_M680X_6309";
-      "MODE_64",       "MODE_64_M68K_020_MIPS64_M680X_6800";
-      "M68K_020",      "MODE_64_M68K_020_MIPS64_M680X_6800";
-      "MIPS64",        "MODE_64_M68K_020_MIPS64_M680X_6800";
-      "M680X_6800",    "MODE_64_M68K_020_MIPS64_M680X_6800";
-      "THUMB",         "THUMB_MICRO_V9_QPX_M68K_030_M680X_6801";
-      "MICRO",         "THUMB_MICRO_V9_QPX_M68K_030_M680X_6801";
-      "V9",            "THUMB_MICRO_V9_QPX_M68K_030_M680X_6801";
-      "QPX",           "THUMB_MICRO_V9_QPX_M68K_030_M680X_6801";
-      "M68K_030",      "THUMB_MICRO_V9_QPX_M68K_030_M680X_6801";
-      "M680X_6801",    "THUMB_MICRO_V9_QPX_M68K_030_M680X_6801";
-      "MCLASS",        "MCLASS_MIPS3_M68K_040_M680X_6805";
-      "MIPS3",         "MCLASS_MIPS3_M68K_040_M680X_6805";
-      "M68K_040",      "MCLASS_MIPS3_M68K_040_M680X_6805";
-      "M680X_6805",    "MCLASS_MIPS3_M68K_040_M680X_6805";
-      "V8",            "V8_MIPS32R6_M68K_060_M680X_6808";
-      "MIPS32R6",      "V8_MIPS32R6_M68K_060_M680X_6808";
-      "M68K_060",      "V8_MIPS32R6_M68K_060_M680X_6808";
-      "M680X_6808",    "V8_MIPS32R6_M68K_060_M680X_6808";
-      "MIPS2",         "MIPS2_M680X_6809";
-      "M680X_6809",    "MIPS2_M680X_6809";
+      "ARM",           "LITTLE_ENDIAN";
+      "M68K_000",      "MODE_16";
+      "M680X_6301",    "MODE_16";
+      "M68K_010",      "MODE_32";
+      "MIPS32",        "MODE_32";
+      "M680X_6309",    "MODE_32";
+      "M68K_020",      "MODE_64";
+      "MIPS64",        "MODE_64";
+      "M680X_6800",    "MODE_64";
+      "MICRO",         "THUMB";
+      "V9",            "THUMB";
+      "QPX",           "THUMB";
+      "M68K_030",      "THUMB";
+      "M680X_6801",    "THUMB";
+      "MIPS3",         "MCLASS";
+      "M68K_040",      "MCLASS";
+      "M680X_6805",    "MCLASS";
+      "MIPS32R6",      "V8";
+      "M68K_060",      "V8";
+      "M680X_6808",    "V8";
+      "M680X_6809",    "MIPS2";
     ];
     "cs_opt_value", Hashtbl.of_seq @@ List.to_seq [
-      "OFF",              "OFF_SYNTAX_DEFAULT";
-      "SYNTAX_DEFAULT",   "OFF_SYNTAX_DEFAULT";
-      "ON",               "ON_SYNTAX_NOREGNAME";
-      "SYNTAX_NOREGNAME", "ON_SYNTAX_NOREGNAME";
+      "SYNTAX_DEFAULT",   "OFF";
+      "SYNTAX_NOREGNAME", "ON";
     ];
     "arm_reg", Hashtbl.of_seq @@ List.to_seq [
-      "R13", "SP_R13";
-      "SP",  "SP_R13";
-      "R14", "LR_R14";
-      "LR",  "LR_R14";
-      "PC",  "PC_R15";
-      "R15", "PC_R15";
-      "R9",  "SB_R9";
-      "SB",  "SB_R9";
-      "R10", "SL_R10";
-      "SL",  "SL_R10";
-      "R11", "FP_R11";
-      "FP",  "FP_R11";
-      "R12", "IP_R12";
-      "IP",  "IP_R12";
+      "SP",  "R13";
+      "LR",  "R14";
+      "PC",  "R15";
+      "SB",  "R9";
+      "SL",  "R10";
+      "FP",  "R11";
+      "IP",  "R12";
     ];
     "arm64_reg", Hashtbl.of_seq @@ List.to_seq [
-      "IP0", "IP0_X16";
-      "X16", "IP0_X16";
-      "IP1", "IP1_X17";
-      "X17", "IP1_X17";
-      "FP",  "FP_X29";
-      "X29", "FP_X29";
-      "LR",  "LR_X30";
-      "X30", "LR_X30";
+      "IP0", "X16";
+      "IP1", "X17";
+      "FP",  "X29";
+      "LR",  "X30";
     ];
     "mips_reg", Hashtbl.of_seq @@ List.to_seq [
-     "REG_0",  "ZERO_R0";     "ZERO", "ZERO_R0";
-     "REG_1",  "AT_R1";       "AT",   "AT_R1";
-     "REG_2",  "V0_R2";       "V0",   "V0_R2";
-     "REG_3",  "V1_R3";       "V1",   "V1_R3";
-     "REG_4",  "A0_R4";       "A0",   "A0_R4";
-     "REG_5",  "A1_R5";       "A1",   "A1_R5";
-     "REG_6",  "A2_R6";       "A2",   "A2_R6";
-     "REG_7",  "A3_R7";       "A3",   "A3_R7";
-     "REG_8",  "T0_R8";       "T0",   "T0_R8";
-     "REG_9",  "T1_R9";       "T1",   "T1_R9";
-     "REG_10", "T2_R10";      "T2",   "T2_R10";
-     "REG_11", "T3_R11";      "T3",   "T3_R11";
-     "REG_12", "T4_R12";      "T4",   "T4_R12";
-     "REG_13", "T5_R13";      "T5",   "T5_R13";
-     "REG_14", "T6_R14";      "T6",   "T6_R14";
-     "REG_15", "T7_R15";      "T7",   "T7_R15";
-     "REG_16", "S0_R16";      "S0",   "S0_R16";
-     "REG_17", "S1_R17";      "S1",   "S1_R17";
-     "REG_18", "S2_R18";      "S2",   "S2_R18";
-     "REG_19", "S3_R19";      "S3",   "S3_R19";
-     "REG_20", "S4_R20";      "S4",   "S4_R20";
-     "REG_21", "S5_R21";      "S5",   "S5_R21";
-     "REG_22", "S6_R22";      "S6",   "S6_R22";
-     "REG_23", "S7_R23";      "S7",   "S7_R23";
-     "REG_24", "T8_R24";      "T8",   "T8_R24";
-     "REG_25", "T9_R25";      "T9",   "T9_R25";
-     "REG_26", "K0_R26";      "K0",   "K0_R26";
-     "REG_27", "K1_R27";      "K1",   "K1_R27";
-     "REG_28", "GP_R28";      "GP",   "GP_R28";
-     "REG_29", "SP_R29";      "SP",   "SP_R29";
-     "REG_30", "FP_S8_R30";   "FP",   "FP_S8_R30";   "S8", "FP_S8_R30";
-     "REG_31", "RA_R31";      "RA",   "RA_R31";
-     "AC0",    "LO0_HI0_AC0"; "HI0",  "LO0_HI0_AC0";
-     "AC1",    "LO1_HI1_AC1"; "HI1",  "LO1_HI1_AC1";
-     "AC2",    "LO2_HI2_AC2"; "HI2",  "LO2_HI2_AC2";
-     "AC3",    "LO3_HI3_AC3"; "HI3",  "LO3_HI3_AC3";
-     "HI0",    "LO0_HI0_AC0"; "LO0",  "LO0_HI0_AC0";
-     "HI1",    "LO1_HI1_AC1"; "LO1",  "LO1_HI1_AC1";
-     "HI2",    "LO2_HI2_AC2"; "LO2",  "LO2_HI2_AC2";
-     "HI3",    "LO3_HI3_AC3"; "LO3",  "LO3_HI3_AC3";
+     "ZERO", "REG_0";
+     "AT",   "REG_1";
+     "V0",   "REG_2";
+     "V1",   "REG_3";
+     "A0",   "REG_4";
+     "A1",   "REG_5";
+     "A2",   "REG_6";
+     "A3",   "REG_7";
+     "T0",   "REG_8";
+     "T1",   "REG_9";
+     "T2",   "REG_10";
+     "T3",   "REG_11";
+     "T4",   "REG_12";
+     "T5",   "REG_13";
+     "T6",   "REG_14";
+     "T7",   "REG_15";
+     "S0",   "REG_16";
+     "S1",   "REG_17";
+     "S2",   "REG_18";
+     "S3",   "REG_19";
+     "S4",   "REG_20";
+     "S5",   "REG_21";
+     "S6",   "REG_22";
+     "S7",   "REG_23";
+     "T8",   "REG_24";
+     "T9",   "REG_25";
+     "K0",   "REG_26";
+     "K1",   "REG_27";
+     "GP",   "REG_28";
+     "SP",   "REG_29";
+     "S8",   "REG_30";
+     "FP",   "REG_30";
+     "RA",   "REG_31";
+     "HI0",  "AC0";
+     "HI1",  "AC1";
+     "HI2",  "AC2";
+     "HI3",  "AC3";
+     "LO0",  "AC0";
+     "LO1",  "AC1";
+     "LO2",  "AC2";
+     "LO3",  "AC3";
     ];
     "sparc_reg", Hashtbl.of_seq @@ List.to_seq [
-      "I6", "FP_I6";
-      "FP", "FP_I6";
-      "O6", "SP_O6";
-      "SP", "SP_O6";
+      "FP", "I6";
+      "SP", "O6";
+    ];
+    "tms320c64x_reg", Hashtbl.of_seq @@ List.to_seq [
+      "ECR", "EFR";
+      "ISR", "IFR";
     ];
     "x86_prefix", Hashtbl.of_seq @@ List.to_seq [
-      "REPE", "REP_REPE";
-      "REP",  "REP_REPE";
+      "REPE", "REP";
     ];
 ]
 
@@ -153,8 +143,9 @@ end
 (* Utility functions *)
 
 let val_int x =
-  let open Int32 in succ @@ shift_left x 1
+  succ @@ x lsl 1
 
+(*
 let caml_hash_variant tag =
   let open Int32 in
   let acc = ref 0l in
@@ -163,6 +154,15 @@ let caml_hash_variant tag =
   done;
   acc := logand !acc (pred (shift_left 1l 31));
   val_int @@ if !acc > 0x3fffffffl then sub !acc (shift_left 1l 31) else !acc
+*)
+
+let caml_hash_variant s =
+  let acc = ref 0 in
+  for i = 0 to String.length s - 1 do
+    acc := 223 * !acc + Char.code s.[i]
+  done;
+  acc := !acc land (1 lsl 31 - 1);
+  if !acc > 0x3fffffff then !acc - (1 lsl 31) else !acc
 
 (* Standard library extras to avoid extra build dependencies *)
 
@@ -254,8 +254,7 @@ let get_typename line =
 
 (* Update syms and mapper based on current line part [t] *)
 let get_syms ~mapper ~typ ~prefix syms t =
-  let open Option in
-  if t == "" || String.starts_with "//" t then syms
+  if t = "" || String.starts_with "//" t then syms
   else match split_wsbr t with
     | _ :: sep :: _ when sep <> "=" -> syms
     | name :: _ when String.starts_with (String.uppercase_ascii prefix) name -> begin
@@ -275,14 +274,16 @@ let get_syms ~mapper ~typ ~prefix syms t =
           sym
       in
 
-      let sym = value ~default:sym @@ (Hashtbl.find_opt variant_mapping typ >>= fun tm ->
-        Hashtbl.find_opt tm sym)
-      in
+      (*
+        let sym = value ~default:sym @@ (Hashtbl.find_opt variant_mapping typ >>= fun tm ->
+          Hashtbl.find_opt tm sym)
+        in
+      *)
 
       let sym_name = "CAPSTONE_ML_SYM_" ^ (String.uppercase_ascii sym) in
       let lhs = trim name in
 
-      if String.ends_with "_ENDING" lhs then
+      if String.ends_with "_ENDING" lhs || String.ends_with "_MAX" lhs then
         syms
       else match Hashtbl.find_opt mapper typ with
         | None ->
@@ -365,7 +366,9 @@ let generate () =
           let k_lower = String.lowercase_ascii k in
           Printf.fprintf h_file {|extern value ml_capstone_to_%s(int v);
 extern int ml_%s_to_capstone(value v);
-|} k_lower k_lower;
+extern value ml_%s_to_capstone_int(value v);
+extern value ml_int_capstone_to_%s(value v);
+|} k_lower k_lower k_lower k_lower;
 
           Printf.bprintf c2ml {|value ml_capstone_to_%s(int v) {
   CAMLparam0();
@@ -377,8 +380,16 @@ extern int ml_%s_to_capstone(value v);
   switch (v) {
 |} k_lower;
 
-          Printf.bprintf mlty {|type %s = [
-|} k_lower;
+          let ml_mod = String.split_on_char ~sep:'_' k_lower |>
+                       List.tl |>
+                       List.map ~f:String.capitalize_ascii |>
+                       String.concat ~sep:""
+          in
+
+          Printf.bprintf mlty {|module %s = struct
+  type t  = private int
+  type id = [
+|} ml_mod;
 
           Printf.bprintf mlcmp {|int ml_%s_compare(value u, value v) {
   CAMLparam2(u, v);
@@ -388,31 +399,83 @@ extern int ml_%s_to_capstone(value v);
 |} k_lower k_lower k_lower;
 
           Syms.Map.iter (fun (sym_name, sym) vv ->
+            let open Option in
+            if String.starts_with "cs_" k_lower then (
+              if (Hashtbl.find_opt variant_mapping k_lower >>| fun tm -> Hashtbl.mem tm sym) <> Some true then (
+                Printf.bprintf c2ml {|  case %s:
+    CAMLreturn(%s);
+|} vv sym_name
+              );
+              Printf.bprintf ml2c {|  case %s:
+    CAMLreturn(%s);
+|} sym_name vv;
+              Printf.bprintf mlty {|    | `%s
+|} sym
+            ) else if (Hashtbl.find_opt variant_mapping k_lower >>| fun tm -> Hashtbl.mem tm sym) <> Some true then (
               Printf.bprintf c2ml {|  case %s:
     CAMLreturn(%s);
 |} vv sym_name;
               Printf.bprintf ml2c {|  case %s:
     CAMLreturn(%s);
 |} sym_name vv;
-              Printf.bprintf mlty {|  | `%s
-|} sym;
-            ) v;
+              Printf.bprintf mlty {|    | `%s
+|} sym
+            )
+          ) v;
 
           Printf.bprintf c2ml {|  default:
     caml_invalid_argument("ml_capstone_%s: impossible value");
   }
 }
 
-|} k_lower;
+value ml_%s_to_capstone_int(value v) {
+  CAMLparam1(v);
+  CAMLreturn(Val_int(ml_%s_to_capstone(v)));
+}
+
+|} k_lower k_lower k_lower;
 
           Printf.bprintf ml2c {|  default:
     caml_invalid_argument("ml_capstone_%s: impossible value");
   }
 }
 
-|} k_lower;
+value ml_int_capstone_to_%s(value v) {
+  CAMLparam1(v);
+  CAMLreturn(ml_capstone_to_%s(Int_val(v)));
+}
 
-          Printf.bprintf mlty "]\n\n";
+|} k_lower k_lower k_lower;
+
+          Printf.bprintf mlty {|  ]
+
+  external of_id : id -> t = "ml_%s_to_capstone_int"
+  external to_id : t -> id = "ml_int_capstone_to_%s"
+
+|} k_lower k_lower;
+
+          Syms.Map.iter (fun (_, sym) _ ->
+              let open Option in
+              let sym' = if String.starts_with "cs_" k_lower then
+                  sym
+                else match Hashtbl.find_opt variant_mapping k_lower >>= fun tm -> Hashtbl.find_opt tm sym with
+                  | Some sym' -> sym'
+                  | _ -> sym
+              in
+              let name = match String.lowercase_ascii sym with
+                | "and" | "asr" | "class" | "for" | "in" | "lsl"
+                | "lsr" | "mod" | "not" | "or" as v -> v ^ "_"
+                | v -> v
+              in
+              Printf.bprintf mlty {|  let %s = of_id `%s
+|} name sym'
+            ) v;
+
+          Printf.bprintf mlty {|end
+
+type %s = %s.id
+
+|} k_lower ml_mod;
       ) mapper;
 
       Printf.fprintf h_file {|#endif|};
@@ -436,7 +499,7 @@ extern int ml_%s_to_capstone(value v);
 |};
 
   Syms.Set.iter (fun (name, sym) ->
-      Printf.fprintf ph_file {|#define %s (%ld)
+      Printf.fprintf ph_file {|#define %s (%d)
 |} name (caml_hash_variant sym)
     ) syms;
 
