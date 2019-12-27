@@ -3,50 +3,46 @@
 
 module Const = Arm_const
 
-let _CS_OP_ARCH = 5;;
-let _CS_OP_CIMM = _CS_OP_ARCH         (* C-Immediate *)
-let _CS_OP_PIMM = _CS_OP_ARCH + 1     (* P-Immediate *)
-
-
-(* architecture specific info of instruction *)
-type arm_op_shift = {
-	shift_type: int;	(* TODO: covert this to pattern like arm_op_value? *)
-	shift_value: int;
+type operand_shift = {
+	shift_type  : Const.Shifter.t;
+	shift_value : int;
 }
 
-type arm_op_mem = {
-	base: int;
-	index: int;
-	scale: int;
-	disp: int
+type operand_mem = {
+	base   : Const.Reg.t option;
+	index  : Const.Reg.t option;
+	scale  : int;
+	disp   : int;
 }
 
-type arm_op_value =
-	| ARM_OP_INVALID of int
-	| ARM_OP_REG of int
-	| ARM_OP_CIMM of int
-	| ARM_OP_PIMM of int
-	| ARM_OP_IMM of int
-	| ARM_OP_FP of float
-	| ARM_OP_MEM of arm_op_mem
-	| ARM_OP_SETEND of int
+type operand_val =
+	| Reg of Const.Reg.t
+	| CImm of int32
+	| PImm of int32
+	| Imm of int32
+	| Fp of float
+	| Mem of operand_mem
+	| Setend of Const.SetendType.t
+  | SysReg of Const.Sysreg.t
 
-type arm_op = {
-	vector_index: int;
-	shift: arm_op_shift;
-	value: arm_op_value;
-	subtracted: bool;
+type operand = {
+	vector_index : int option;
+	shift        : operand_shift option;
+	value        : operand_val option;
+	subtracted   : bool;
+  access       : [ `R | `W | `RW ];
+  neon_lane    : int option;
 }
 
-type arm_insn_detail = {
-	usermode: bool;
-	vector_size: int;
-	vector_data: int;
-	cps_mode: int;
-	cps_flag: int;
-	cc: int;
-	update_flags: bool;
-	writeback: bool;
-	mem_barrier: int;
-	operands: arm_op array;
+type detail = {
+	usermode     : bool;
+	vector_size  : int;
+	vector_data  : Const.VectordataType.t option;
+	cps_mode     : Const.CpsmodeType.t option;
+	cps_flag     : Const.CpsflagType.t option;
+	cc           : Const.Cc.t option;
+	update_flags : bool;
+	writeback    : bool;
+	mem_barrier  : Const.MemBarrier.t option;
+	operands     : operand array;
 }

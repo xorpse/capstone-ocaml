@@ -145,24 +145,13 @@ end
 let val_int x =
   succ @@ x lsl 1
 
-(*
-let caml_hash_variant tag =
-  let open Int32 in
-  let acc = ref 0l in
-  for i = 0 to String.length tag - 1 do
-    acc := add (mul 223l !acc) (of_int @@ Char.code tag.[i])
-  done;
-  acc := logand !acc (pred (shift_left 1l 31));
-  val_int @@ if !acc > 0x3fffffffl then sub !acc (shift_left 1l 31) else !acc
-*)
-
 let caml_hash_variant s =
   let acc = ref 0 in
   for i = 0 to String.length s - 1 do
     acc := 223 * !acc + Char.code s.[i]
   done;
   acc := !acc land (1 lsl 31 - 1);
-  if !acc > 0x3fffffff then !acc - (1 lsl 31) else !acc
+  val_int @@ if !acc > 0x3fffffff then !acc - (1 lsl 31) else !acc
 
 (* Standard library extras to avoid extra build dependencies *)
 
@@ -473,7 +462,7 @@ value ml_int_capstone_to_%s(value v) {
 
           Printf.bprintf mlty {|end
 
-type %s = %s.id
+type %s = %s.t
 
 |} k_lower ml_mod;
       ) mapper;

@@ -1,15 +1,37 @@
 module Arm = Arm
 module Arm64 = Arm64
+module Evm = Evm
+module M680x = M680x
+module M68k = M68k
 module Mips = Mips
 module Ppc = Ppc
 module Sparc = Sparc
 module Systemz = Systemz
+module Tms320c64x = Tms320c64x
 module X86 = X86
 module Xcore = Xcore
 
+(*
+   TODO(xorpse):
+     - cs_ac_type -> redo implementation from Cs_const
+     - implement mode -> Cs_const.Mode.t
+     - implement insn_group as int -> make test / test_id
+*)
+
 exception Capstone_error of Cs_const.cs_err
 
-type arch = [ `Arm | `Arm64 | `Mips | `Ppc | `Sparc | `Sysz | `X86 | `Xcore ]
+type arch = [ `ARM
+            | `ARM64
+            | `EVM
+            | `M680
+            | `M68K
+            | `MIPS
+            | `PPC
+            | `SPARC
+            | `SYSTEMZ
+            | `TMS320C64X
+            | `X86
+            | `XCORE ]
 
 type operand = Cs_const.cs_op_type
 
@@ -18,7 +40,7 @@ type group = Cs_const.cs_group_type
 type handle
 
 type arm_insn = {
-  id         : Arm.Const.arm_insn;
+  id         : Arm.Const.Insn.t;
   address    : int;
   size       : int;
   bytes      : bytes;
@@ -26,8 +48,8 @@ type arm_insn = {
   op_str     : string;
   regs_read  : Arm.Const.arm_reg array;
   regs_write : Arm.Const.arm_reg array;
-  groups     : group array;
-  detail     : Arm.arm_insn_detail option;
+  groups     : [ Cs_const.GroupType.id | Arm.Const.InsnGroup.id ] array;
+  detail     : Arm.detail option;
 }
 
 type arm64_insn = {
@@ -39,8 +61,8 @@ type arm64_insn = {
   op_str     : string;
   regs_read  : Arm64.Const.arm64_reg array;
   regs_write : Arm64.Const.arm64_reg array;
-  groups     : group array;
-  detail     : Arm64.arm64_insn_detail option;
+  groups     : [ Cs_const.GroupType.id | Arm64.Const.InsnGroup.id ] array;
+  detail     : Arm64.detail option;
 }
 
 type mips_insn = {
@@ -52,7 +74,7 @@ type mips_insn = {
   op_str     : string;
   regs_read  : Mips.Const.mips_reg array;
   regs_write : Mips.Const.mips_reg array;
-  groups     : group array;
+  groups     : [ Cs_const.GroupType.id | Mips.Const.InsnGroup.id ] array;
   detail     : Mips.mips_insn_detail option;
 }
 
@@ -65,7 +87,7 @@ type ppc_insn = {
   op_str     : string;
   regs_read  : Ppc.Const.ppc_reg array;
   regs_write : Ppc.Const.ppc_reg array;
-  groups     : group array;
+  groups     : [ Cs_const.GroupType.id | Ppc.Const.InsnGroup.id ] array;
   detail     : Ppc.ppc_insn_detail option;
 }
 
@@ -78,7 +100,7 @@ type sparc_insn = {
   op_str     : string;
   regs_read  : Sparc.Const.sparc_reg array;
   regs_write : Sparc.Const.sparc_reg array;
-  groups     : group array;
+  groups     : [ Cs_const.GroupType.id | Sparc.Const.InsnGroup.id ] array;
   detail     : Sparc.sparc_insn_detail option;
 }
 
@@ -91,21 +113,21 @@ type sysz_insn = {
   op_str     : string;
   regs_read  : Systemz.Const.sysz_reg array;
   regs_write : Systemz.Const.sysz_reg array;
-  groups     : group array;
+  groups     : [ Cs_const.GroupType.id | Systemz.Const.InsnGroup.id ] array;
   detail     : Systemz.sysz_insn_detail option;
 }
 
 type x86_insn = {
-  id         : X86.Const.x86_insn;
+  id         : X86.Const.Insn.t;
   address    : int;
   size       : int;
   bytes      : bytes;
   mnemonic   : string;
   op_str     : string;
-  regs_read  : X86.Const.x86_reg array;
-  regs_write : X86.Const.x86_reg array;
-  groups     : group array;
-  detail     : X86.x86_insn_detail option;
+  regs_read  : X86.Const.Reg.t array;
+  regs_write : X86.Const.Reg.t array;
+  groups     : [ Cs_const.GroupType.id | X86.Const.InsnGroup.id ] array;
+  detail     : X86.detail option;
 }
 
 type xcore_insn = {
@@ -117,167 +139,158 @@ type xcore_insn = {
   op_str     : string;
   regs_read  : Xcore.Const.xcore_reg array;
   regs_write : Xcore.Const.xcore_reg array;
-  groups     : group array;
+  groups     : [ Cs_const.GroupType.id | Xcore.Const.InsnGroup.id ] array;
   detail     : Xcore.xcore_insn_detail option;
 }
 
-type reg = [ Arm.Const.arm_reg
-           | Arm64.Const.arm64_reg
-           | Mips.Const.mips_reg
-           | Ppc.Const.ppc_reg
-           | Sparc.Const.sparc_reg
-           | Systemz.Const.sysz_reg
-           | X86.Const.x86_reg
-           | Xcore.Const.xcore_reg ]
+type reg = [ Arm.Const.Reg.id
+           | Arm64.Const.Reg.id
+           | Mips.Const.Reg.id
+           | Ppc.Const.Reg.id
+           | Sparc.Const.Reg.id
+           | Systemz.Const.Reg.id
+           | X86.Const.Reg.id
+           | Xcore.Const.Reg.id ]
 
-type mode =
-  [ `LITTLE_ENDIAN
-  | `ARM
-  | `MODE_16
-  | `M68K_000
-  | `M680X_6301
-  | `MODE_32
-  | `M68K_010
-  | `MIPS32
-  | `M680X_6309
-  | `MODE_64
-  | `M68K_020
-  | `MIPS64
-  | `M680X_6800
-  | `THUMB
-  | `MICRO
-  | `V9
-  | `QPX
-  | `M68K_030
-  | `M680X_6801
-  | `MCLASS
-  | `MIPS3
-  | `M68K_040
-  | `M680X_6805
-  | `V8
-  | `MIPS32R6
-  | `M68K_060
-  | `M680X_6808
-  | `MIPS2
-  | `M680X_6809 ]
+external create_ffi : arch:Cs_const.Arch.t -> mode:(Cs_const.cs_mode list) -> handle option = "ml_capstone_create"
 
-type opt = [ `Syntax of [ `Default | `Intel | `Att | `Noregname ]
-           | `Detail of [ `On | `Off ]
-           | `Mode of mode
-           | `Skipdata of [ `On | `Off ] ]
+external disasm_arm_ffi : Cs_const.Arch.t -> handle -> bytes -> Int64.t -> Int64.t -> arm_insn list = "ml_capstone_disassemble"
+external disasm_arm64_ffi : Cs_const.Arch.t -> handle -> bytes -> Int64.t -> Int64.t -> arm64_insn list = "ml_capstone_disassemble"
+external disasm_mips_ffi : Cs_const.Arch.t -> handle -> bytes -> Int64.t -> Int64.t -> mips_insn list = "ml_capstone_disassemble"
+external disasm_ppc_ffi : Cs_const.Arch.t -> handle -> bytes -> Int64.t -> Int64.t -> ppc_insn list = "ml_capstone_disassemble"
+external disasm_sparc_ffi : Cs_const.Arch.t -> handle -> bytes -> Int64.t -> Int64.t -> sparc_insn list = "ml_capstone_disassemble"
+external disasm_sysz_ffi : Cs_const.Arch.t -> handle -> bytes -> Int64.t -> Int64.t -> sysz_insn list = "ml_capstone_disassemble"
+external disasm_x86_ffi : Cs_const.Arch.t -> handle -> bytes -> Int64.t -> Int64.t -> x86_insn list = "ml_capstone_disassemble"
+external disasm_xcore_ffi : Cs_const.Arch.t -> handle -> bytes -> Int64.t -> Int64.t -> xcore_insn list = "ml_capstone_disassemble"
 
-let mode_to_cs_mode = function
-  | `LITTLE_ENDIAN -> `LITTLE_ENDIAN_ARM
-  | `ARM -> `LITTLE_ENDIAN_ARM
-  | `MODE_16 -> `MODE_16_M68K_000_M680X_6301
-  | `M68K_000 -> `MODE_16_M68K_000_M680X_6301
-  | `M680X_6301 -> `MODE_16_M68K_000_M680X_6301
-  | `MODE_32 -> `MODE_32_M68K_010_MIPS32_M680X_6309
-  | `M68K_010 -> `MODE_32_M68K_010_MIPS32_M680X_6309
-  | `MIPS32 -> `MODE_32_M68K_010_MIPS32_M680X_6309
-  | `M680X_6309 -> `MODE_32_M68K_010_MIPS32_M680X_6309
-  | `MODE_64 -> `MODE_64_M68K_020_MIPS64_M680X_6800
-  | `M68K_020 -> `MODE_64_M68K_020_MIPS64_M680X_6800
-  | `MIPS64 -> `MODE_64_M68K_020_MIPS64_M680X_6800
-  | `M680X_6800 -> `MODE_64_M68K_020_MIPS64_M680X_6800
-  | `THUMB -> `THUMB_MICRO_V9_QPX_M68K_030_M680X_6801
-  | `MICRO -> `THUMB_MICRO_V9_QPX_M68K_030_M680X_6801
-  | `V9 -> `THUMB_MICRO_V9_QPX_M68K_030_M680X_6801
-  | `QPX -> `THUMB_MICRO_V9_QPX_M68K_030_M680X_6801
-  | `M68K_030 -> `THUMB_MICRO_V9_QPX_M68K_030_M680X_6801
-  | `M680X_6801 -> `THUMB_MICRO_V9_QPX_M68K_030_M680X_6801
-  | `MCLASS -> `MCLASS_MIPS3_M68K_040_M680X_6805
-  | `MIPS3 -> `MCLASS_MIPS3_M68K_040_M680X_6805
-  | `M68K_040 -> `MCLASS_MIPS3_M68K_040_M680X_6805
-  | `M680X_6805 -> `MCLASS_MIPS3_M68K_040_M680X_6805
-  | `V8 -> `V8_MIPS32R6_M68K_060_M680X_6808
-  | `MIPS32R6 -> `V8_MIPS32R6_M68K_060_M680X_6808
-  | `M68K_060 -> `V8_MIPS32R6_M68K_060_M680X_6808
-  | `M680X_6808 -> `V8_MIPS32R6_M68K_060_M680X_6808
-  | `MIPS2 -> `MIPS2_M680X_6809
-  | `M680X_6809 -> `MIPS2_M680X_6809
-
-external create_ffi : arch:Cs_const.cs_arch -> mode:(Cs_const.cs_mode list) -> handle option = "ml_capstone_create"
-
-external disasm_arm_ffi : Cs_const.cs_arch -> handle -> bytes -> Int64.t -> Int64.t -> arm_insn list = "ml_capstone_disassemble"
-external disasm_arm64_ffi : Cs_const.cs_arch -> handle -> bytes -> Int64.t -> Int64.t -> arm64_insn list = "ml_capstone_disassemble"
-external disasm_mips_ffi : Cs_const.cs_arch -> handle -> bytes -> Int64.t -> Int64.t -> mips_insn list = "ml_capstone_disassemble"
-external disasm_ppc_ffi : Cs_const.cs_arch -> handle -> bytes -> Int64.t -> Int64.t -> ppc_insn list = "ml_capstone_disassemble"
-external disasm_sparc_ffi : Cs_const.cs_arch -> handle -> bytes -> Int64.t -> Int64.t -> sparc_insn list = "ml_capstone_disassemble"
-external disasm_sysz_ffi : Cs_const.cs_arch -> handle -> bytes -> Int64.t -> Int64.t -> sysz_insn list = "ml_capstone_disassemble"
-external disasm_x86_ffi : Cs_const.cs_arch -> handle -> bytes -> Int64.t -> Int64.t -> x86_insn list = "ml_capstone_disassemble"
-external disasm_xcore_ffi : Cs_const.cs_arch -> handle -> bytes -> Int64.t -> Int64.t -> xcore_insn list = "ml_capstone_disassemble"
-
-external set_option_ffi: handle -> Cs_const.cs_opt_type -> [ Cs_const.cs_opt_value | Cs_const.cs_mode ] -> unit = "ml_capstone_set_option"
+external set_option_ffi: handle -> Cs_const.OptType.t -> int -> unit = "ml_capstone_set_option"
 external version: unit -> int = "ml_capstone_version"
 
 module Arch = struct
-  type 'a t =
-    | Arm     : arm_insn t
-    | Arm64   : arm64_insn t
-    | Mips    : mips_insn t
-    | Ppc     : ppc_insn t
-    | Sparc   : sparc_insn t
-    | SystemZ : sysz_insn t
-    | X86     : x86_insn t
-    | Xcore   : xcore_insn t
+  type ('a, 'b) t =
+    | ARM   : ([ `ARM ], arm_insn) t
+    | ARM64 : ([ `ARM64 ], arm64_insn) t
+    | MIPS  : ([ `MIPS ], mips_insn) t
+    | PPC   : ([ `PPC ], ppc_insn) t
+    | SPARC : ([ `SPARC ], sparc_insn) t
+    | SYSZ  : ([ `SYSZ ], sysz_insn) t
+    | X86   : ([ `X86 ], x86_insn) t
+    | XCORE : ([ `XCORE ], xcore_insn) t
 end
 
-type 'a t = T : 'a Arch.t * handle -> 'a t
+type ('a, 'b) t = T : ('a, 'b) Arch.t * handle -> ('a, 'b) t
 
-let arch : type a. a t -> a Arch.t =
+let arch : type a b. (a, b) t -> (a, b) Arch.t =
   function T (arch, _) -> arch
 
 let handle = function T (_, h) -> h
 
-let disassemble (type a) (t : a t) ~(addr : int64) ?(count : int64 = -1L) (buf : bytes)
-  : a list = match t with
-  | T (Arch.Arm, h) -> disasm_arm_ffi `ARM h buf addr count
-  | T (Arch.Arm64, h) -> disasm_arm64_ffi `ARM64 h buf addr count
-  | T (Arch.Mips, h) -> disasm_mips_ffi `MIPS h buf addr count
-  | T (Arch.Ppc, h) -> disasm_ppc_ffi `PPC h buf addr count
-  | T (Arch.Sparc, h) -> disasm_sparc_ffi `SPARC h buf addr count
-  | T (Arch.SystemZ, h) -> disasm_sysz_ffi `SYSZ h buf addr count
-  | T (Arch.X86, h) -> disasm_x86_ffi `X86 h buf addr count
-  | T (Arch.Xcore, h) -> disasm_xcore_ffi `XCORE h buf addr count
+let disassemble (type a) (type b) (t : (a, b) t) ~(addr : int64) ?(count : int64 = -1L) (buf : bytes)
+  : b list = match t with
+  | T (Arch.ARM, h) -> disasm_arm_ffi Cs_const.Arch.arm h buf addr count
+  | T (Arch.ARM64, h) -> disasm_arm64_ffi Cs_const.Arch.arm64 h buf addr count
+  | T (Arch.MIPS, h) -> disasm_mips_ffi Cs_const.Arch.mips h buf addr count
+  | T (Arch.PPC, h) -> disasm_ppc_ffi Cs_const.Arch.ppc h buf addr count
+  | T (Arch.SPARC, h) -> disasm_sparc_ffi Cs_const.Arch.sparc h buf addr count
+  | T (Arch.SYSZ, h) -> disasm_sysz_ffi Cs_const.Arch.sysz h buf addr count
+  | T (Arch.X86, h) -> disasm_x86_ffi Cs_const.Arch.x86 h buf addr count
+  | T (Arch.XCORE, h) -> disasm_xcore_ffi Cs_const.Arch.xcore h buf addr count
 
-(* TODO: can we make this not require the conversion *)
-let create (type a) ?(mode : mode list = []) (arch : a Arch.t) : a t option =
+type any_arch = arch
+
+type 'a mode =
+  | M_LITTLE_ENDIAN : [< any_arch ] mode
+  | M_ARM           : [< `ARM ] mode
+  | M_MODE_16       : [< `X86 ] mode
+  | M_MODE_32       : [< `MIPS | `X86 ] mode
+  | M_MODE_64       : [< `MIPS | `PPC | `X86 ] mode
+  | M_THUMB         : [< `ARM ] mode
+  | M_MCLASS        : [< `ARM ] mode
+  | M_V8            : [< `ARM ] mode
+  | M_MICRO         : [< `MIPS ] mode
+  | M_MIPS3         : [< `MIPS ] mode
+  | M_MIPS3R6       : [< `MIPS ] mode
+  | M_MIPS2         : [< `MIPS ] mode
+  | M_V9            : [< `SPARC ] mode
+  | M_QPX           : [< `PPC ] mode
+  | M_M68K_000      : [< `M68K ] mode
+  | M_M68K_010      : [< `M68K ] mode
+  | M_M68K_020      : [< `M68K ] mode
+  | M_M68K_030      : [< `M68K ] mode
+  | M_M68K_040      : [< `M68K ] mode
+  | M_M68K_060      : [< `M68K ] mode
+  | M_BIG_ENDIAN    : [< any_arch] mode
+  | M_MIPS32        : [< `MIPS ] mode
+  | M_MIPS64        : [< `MIPS ] mode
+  | M_M680X_6301    : [< `M680X ] mode
+  | M_M680X_6309    : [< `M680X ] mode
+  | M_M680X_6800    : [< `M680X ] mode
+  | M_M680X_6801    : [< `M680X ] mode
+  | M_M680X_6805    : [< `M680X ] mode
+  | M_M680X_6808    : [< `M680X ] mode
+  | M_M680X_6809    : [< `M680X ] mode
+  | M_M680X_6811    : [< `M680X ] mode
+  | M_M680X_CPU12   : [< `M680X ] mode
+  | M_M680X_HCS08   : [< `M680X ] mode
+  | M_PLUS          : 'a mode * 'a mode -> 'a mode
+
+let create (type a) (type b) ?(_mode : a mode option) (arch : (a, b) Arch.t) : (a, b) t option =
   let arch' = match arch with
-    | Arch.Arm -> `ARM
-    | Arch.Arm64 -> `ARM64
-    | Arch.Mips -> `MIPS
-    | Arch.Ppc -> `PPC
-    | Arch.Sparc -> `SPARC
-    | Arch.SystemZ -> `SYSZ
-    | Arch.X86 -> `X86
-    | Arch.Xcore -> `XCORE
+    | Arch.ARM -> Cs_const.Arch.arm
+    | Arch.ARM64 -> Cs_const.Arch.arm64
+    | Arch.MIPS -> Cs_const.Arch.mips
+    | Arch.PPC -> Cs_const.Arch.ppc
+    | Arch.SPARC -> Cs_const.Arch.sparc
+    | Arch.SYSZ -> Cs_const.Arch.sysz
+    | Arch.X86 -> Cs_const.Arch.x86
+    | Arch.XCORE -> Cs_const.Arch.xcore
   in
-  match create_ffi ~arch:arch' ~mode:(List.map mode_to_cs_mode mode) with
+  match create_ffi ~arch:arch' ~mode:[] with
   | Some h -> Some (T (arch, h))
   | None -> None
 
-let set_option t opt =
-  let (opt, value) = match opt with
-    | `Syntax v ->
-      (`SYNTAX, match v with
-        | `Default -> `OFF_SYNTAX_DEFAULT
-        | `Intel -> `SYNTAX_INTEL
-        | `Att -> `SYNTAX_ATT
-        | `Noregname -> `ON_SYNTAX_NOREGNAME)
-    | `Detail v ->
-      (`DETAIL, match v with
-        | `On -> `ON_SYNTAX_NOREGNAME
-        | `Off -> `OFF_SYNTAX_DEFAULT)
-    | `Mode m -> (`MODE, mode_to_cs_mode m)
-    | `Skipdata v ->
-      (`SKIPDATA, match v with
-        | `On -> `ON_SYNTAX_NOREGNAME
-        | `Off -> `OFF_SYNTAX_DEFAULT)
-  in
-  set_option_ffi (handle t) opt value
+type 'a opt_val =
+  | On        : [> `On ] opt_val
+  | Off       : [> `Off ] opt_val
+  | Att       : [> `Att ] opt_val
+  | Default   : [> `Default ] opt_val
+  | Intel     : [> `Intel ] opt_val
+  | NoRegName : [> `NoRegName ] opt_val
+  | Masm      : [> `Masm ] opt_val
 
-let disassemble_only ~arch ~mode ~addr ?(count = -1L) buf =
-  match create ~mode arch with
+type 'a opt =
+  | Detail   : [ `On | `Off ] opt_val -> [< any_arch ] opt
+  | Syntax   : [ `Att | `Default | `Intel | `NoRegName | `Masm ] opt_val -> [< any_arch ] opt
+  | Skipdata : [ `On | `Off ] opt_val -> [< any_arch ] opt
+  | Unsigned : [ `On | `Off ] opt_val -> [< any_arch ] opt
+  | Mode     : 'a mode -> 'a opt
+
+let set_option (type a) (type b) (t : (a, b) t) (opt : a opt) =
+  let open Cs_const in
+  let (opt, value) = match opt with
+    | Detail v ->
+      (OptType.detail, match v with
+        | On -> OptValue.on
+        | Off -> OptValue.off)
+    | Mode _ -> failwith "TODO"
+    | Skipdata v ->
+      (OptType.skipdata, match v with
+        | On -> OptValue.on
+        | Off -> OptValue.off)
+    | Syntax v ->
+      (OptType.syntax, match v with
+        | Att -> OptValue.syntax_att
+        | Default -> OptValue.syntax_default
+        | Intel -> OptValue.syntax_intel
+        | NoRegName -> OptValue.syntax_noregname
+        | Masm -> OptValue.syntax_masm)
+    | Unsigned v ->
+      (OptType.skipdata, match v with
+        | On -> OptValue.on
+        | Off -> OptValue.off)
+  in set_option_ffi (handle t) opt (value :> int)
+
+let disassemble_only ~arch ~_mode ~addr ?(count = -1L) buf =
+  match create ~_mode arch with
   | None -> None
   | Some ctx -> Some (disassemble ctx ~addr ~count buf)

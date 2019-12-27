@@ -7,6 +7,12 @@
            arm64
            arm_const
            arm
+           evm_const
+           evm
+           m680x_const
+           m680x
+           m68k_const
+           m68k
            mips_const
            mips
            ppc_const
@@ -15,6 +21,8 @@
            sparc
            systemz
            sysz_const
+           tms320c64x_const
+           tms320c64x
            x86_const
            x86
            xcore_const
@@ -24,10 +32,14 @@
            cs_const_stubs
            arm64_const_stubs
            arm_const_stubs
+	   evm_const_stubs
+	   m680x_const_stubs
+	   m68k_const_stubs
            mips_const_stubs
            ppc_const_stubs
            sparc_const_stubs
            sysz_const_stubs
+	   tms320c64x_const_stubs
            x86_const_stubs
            xcore_const_stubs)
   (c_flags (-Wall -Wextra -Wwrite-strings))
@@ -43,6 +55,15 @@
           arm_const.ml
           arm_const_stubs.c
           arm_const_stubs.h
+	  evm_const.ml
+	  evm_const_stubs.c
+	  evm_const_stubs.h
+	  m680x_const.ml
+	  m680x_const_stubs.c
+	  m680x_const_stubs.h
+	  m68k_const.ml
+	  m68k_const_stubs.c
+	  m68k_const_stubs.h
           mips_const.ml
           mips_const_stubs.c
           mips_const_stubs.h
@@ -55,6 +76,9 @@
           sysz_const.ml
           sysz_const_stubs.c
           sysz_const_stubs.h
+          tms320c64x_const.ml
+          tms320c64x_const_stubs.c
+          tms320c64x_const_stubs.h
           x86_const.ml
           x86_const_stubs.c
           x86_const_stubs.h

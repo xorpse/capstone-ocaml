@@ -3,44 +3,47 @@
 
 module Const = Arm64_const
 
-(* architecture specific info of instruction *)
-type arm64_op_shift = {
-	shift_type: int;
-	shift_value: int;
+type operand_shift = {
+	shift_type  : Const.Shifter.t;
+	shift_value : int;
 }
 
-type arm64_op_mem = {
-	base: int;
-	index: int;
-	disp: int
+type operand_mem = {
+	base  : Const.Reg.t option;
+	index : Const.Reg.t option;
+	disp  : int32;
 }
 
-type arm64_op_value =
-	| ARM64_OP_INVALID of int
-	| ARM64_OP_REG of int
-	| ARM64_OP_CIMM of int
-	| ARM64_OP_IMM of int
-	| ARM64_OP_FP of float
-	| ARM64_OP_MEM of arm64_op_mem
-	| ARM64_OP_REG_MRS of int
-	| ARM64_OP_REG_MSR of int
-	| ARM64_OP_PSTATE of int
-	| ARM64_OP_SYS of int
-	| ARM64_OP_PREFETCH of int
-	| ARM64_OP_BARRIER of int
+type operand_val =
+	| Reg of Const.Reg.t
+	| Imm of int64
+  | CImm of int64
+	| Fp of float
+  | Mem of operand_mem
+	| RegMRS of int
+	| RegMSR of int
+	| PState of Const.Pstate.t
+  | SysAt of Const.AtOp.t
+  | SysDc of Const.DcOp.t
+  | SysIc of Const.IcOp.t
+  | SysTlbi of Const.TlbiOp.t
+  | Sys of int
+	| Prefetch of Const.PrefetchOp.t
+	| Barrier of Const.BarrierOp.t
 
-type arm64_op = {
-	vector_index: int;
-	vas: int;
-	vess: int;
-	shift: arm64_op_shift;
-	ext: int;
-	value: arm64_op_value;
+type operand = {
+	vector_index : int option;
+	vas          : Const.Vas.t option;
+	vess         : Const.Vess.t option;
+	shift        : operand_shift option;
+	ext          : Const.Extender.t option;
+	value        : operand_val;
+  access       : [ `R | `W | `RW ];
 }
 
-type arm64_insn_detail = {
-	cc: int;
-	update_flags: bool;
-	writeback: bool;
-	operands: arm64_op array;
+type detail = {
+	cc           : Const.Cc.t option;
+	update_flags : bool;
+	writeback    : bool;
+	operands     : operand array;
 }
