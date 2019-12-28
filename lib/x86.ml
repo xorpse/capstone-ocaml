@@ -318,7 +318,7 @@ type operand_val = Imm of int64
                  | Reg of Const.Reg.t
 
 type operand = {
-	value           : operand_val option;
+	value           : operand_val;
   size            : int;
   access          : [ `R | `W | `RW ];
 	avx_bcast       : Const.AvxBcast.t option;

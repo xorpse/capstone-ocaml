@@ -1,8 +1,6 @@
 (* Capstone Disassembly Engine
  * By Guillaume Jeanne <guillaume.jeanne@ensimag.fr>, 2014> *)
 
-module Const = Xcore_const
-
 module Const = struct
   include Xcore_const
 

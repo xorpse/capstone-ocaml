@@ -1,22 +1,21 @@
 (* Capstone Disassembly Engine
  * By Guillaume Jeanne <guillaume.jeanne@ensimag.fr>, 2014> *)
 
-module Const = Sparc_const
 module Const = struct
   module Cc = Sparc_const.Cc
 
   module Hint = struct
     type t = private int
     type id = [ `A
-              | `Pt
-              | `Pn
+              | `PT
+              | `PN
               ]
 
     external of_id : id -> t = "ml_sparc_hint_to_capstone_int"
 
     let a = of_id `A
-    let pt = of_id `Pt
-    let pn = of_id `Pn
+    let pt = of_id `PT
+    let pn = of_id `PN
 
     let test t v = (t land v) <> 0
     let test_id t id = test t (of_id id :> int)

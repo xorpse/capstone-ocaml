@@ -41,85 +41,134 @@ type handle
 
 type arm_insn = {
   id         : Arm.Const.Insn.t;
-  address    : int;
+  address    : int64;
   size       : int;
   bytes      : bytes;
   mnemonic   : string;
   op_str     : string;
-  regs_read  : Arm.Const.arm_reg array;
-  regs_write : Arm.Const.arm_reg array;
+  regs_read  : Arm.Const.Reg.t array;
+  regs_write : Arm.Const.Reg.t array;
   groups     : [ Cs_const.GroupType.id | Arm.Const.InsnGroup.id ] array;
   detail     : Arm.detail option;
 }
 
 type arm64_insn = {
-  id         : Arm64.Const.arm64_insn;
-  address    : int;
+  id         : Arm64.Const.Insn.t;
+  address    : int64;
   size       : int;
   bytes      : bytes;
   mnemonic   : string;
   op_str     : string;
-  regs_read  : Arm64.Const.arm64_reg array;
-  regs_write : Arm64.Const.arm64_reg array;
+  regs_read  : Arm64.Const.Reg.t array;
+  regs_write : Arm64.Const.Reg.t array;
   groups     : [ Cs_const.GroupType.id | Arm64.Const.InsnGroup.id ] array;
   detail     : Arm64.detail option;
 }
 
-type mips_insn = {
-  id         : Mips.Const.mips_insn;
-  address    : int;
+type evm_insn = {
+  id         : Evm.Const.Insn.t;
+  address    : int64;
   size       : int;
   bytes      : bytes;
   mnemonic   : string;
   op_str     : string;
-  regs_read  : Mips.Const.mips_reg array;
-  regs_write : Mips.Const.mips_reg array;
   groups     : [ Cs_const.GroupType.id | Mips.Const.InsnGroup.id ] array;
-  detail     : Mips.mips_insn_detail option;
+  detail     : Evm.detail option;
+}
+
+type m680x_insn = {
+  id         : Mips.Const.Insn.t;
+  address    : int64;
+  size       : int;
+  bytes      : bytes;
+  mnemonic   : string;
+  op_str     : string;
+  regs_read  : Mips.Const.Reg.t array;
+  regs_write : Mips.Const.Reg.t array;
+  groups     : [ Cs_const.GroupType.id | Mips.Const.InsnGroup.id ] array;
+  detail     : Mips.detail option;
+}
+
+type m68k_insn = {
+  id         : Mips.Const.Insn.t;
+  address    : int64;
+  size       : int;
+  bytes      : bytes;
+  mnemonic   : string;
+  op_str     : string;
+  regs_read  : Mips.Const.Reg.t array;
+  regs_write : Mips.Const.Reg.t array;
+  groups     : [ Cs_const.GroupType.id | Mips.Const.InsnGroup.id ] array;
+  detail     : Mips.detail option;
+}
+type mips_insn = {
+  id         : Mips.Const.Insn.t;
+  address    : int64;
+  size       : int;
+  bytes      : bytes;
+  mnemonic   : string;
+  op_str     : string;
+  regs_read  : Mips.Const.Reg.t array;
+  regs_write : Mips.Const.Reg.t array;
+  groups     : [ Cs_const.GroupType.id | Mips.Const.InsnGroup.id ] array;
+  detail     : Mips.detail option;
 }
 
 type ppc_insn = {
-  id         : Ppc.Const.ppc_insn;
-  address    : int;
+  id         : Ppc.Const.Insn.t;
+  address    : int64;
   size       : int;
   bytes      : bytes;
   mnemonic   : string;
   op_str     : string;
-  regs_read  : Ppc.Const.ppc_reg array;
-  regs_write : Ppc.Const.ppc_reg array;
+  regs_read  : Ppc.Const.Reg.t array;
+  regs_write : Ppc.Const.Reg.t array;
   groups     : [ Cs_const.GroupType.id | Ppc.Const.InsnGroup.id ] array;
-  detail     : Ppc.ppc_insn_detail option;
+  detail     : Ppc.detail option;
 }
 
 type sparc_insn = {
-  id         : Sparc.Const.sparc_insn;
-  address    : int;
+  id         : Sparc.Const.Insn.t;
+  address    : int64;
   size       : int;
   bytes      : bytes;
   mnemonic   : string;
   op_str     : string;
-  regs_read  : Sparc.Const.sparc_reg array;
-  regs_write : Sparc.Const.sparc_reg array;
+  regs_read  : Sparc.Const.Reg.t array;
+  regs_write : Sparc.Const.Reg.t array;
   groups     : [ Cs_const.GroupType.id | Sparc.Const.InsnGroup.id ] array;
-  detail     : Sparc.sparc_insn_detail option;
+  detail     : Sparc.detail option;
 }
 
-type sysz_insn = {
-  id         : Systemz.Const.sysz_insn;
-  address    : int;
+type systemz_insn = {
+  id         : Systemz.Const.Insn.t;
+  address    : int64;
   size       : int;
   bytes      : bytes;
   mnemonic   : string;
   op_str     : string;
-  regs_read  : Systemz.Const.sysz_reg array;
-  regs_write : Systemz.Const.sysz_reg array;
+  regs_read  : Systemz.Const.Reg.t array;
+  regs_write : Systemz.Const.Reg.t array;
   groups     : [ Cs_const.GroupType.id | Systemz.Const.InsnGroup.id ] array;
-  detail     : Systemz.sysz_insn_detail option;
+  detail     : Systemz.detail option;
+}
+
+type tms320c64x_insn = {
+  id         : X86.Const.Insn.t;
+  address    : int64;
+  size       : int;
+  bytes      : bytes;
+  mnemonic   : string;
+  op_str     : string;
+  regs_read  : X86.Const.Reg.t array;
+  regs_write : X86.Const.Reg.t array;
+  groups     : [ Cs_const.GroupType.id | X86.Const.InsnGroup.id ] array;
+  detail     : X86.detail option;
 }
 
 type x86_insn = {
   id         : X86.Const.Insn.t;
-  address    : int;
+  address    : int64;
   size       : int;
   bytes      : bytes;
   mnemonic   : string;
@@ -131,16 +180,16 @@ type x86_insn = {
 }
 
 type xcore_insn = {
-  id         : Xcore.Const.xcore_insn;
+  id         : Xcore.Const.Insn.t;
   address    : int;
   size       : int;
   bytes      : bytes;
   mnemonic   : string;
   op_str     : string;
-  regs_read  : Xcore.Const.xcore_reg array;
-  regs_write : Xcore.Const.xcore_reg array;
+  regs_read  : Xcore.Const.Reg.t array;
+  regs_write : Xcore.Const.Reg.t array;
   groups     : [ Cs_const.GroupType.id | Xcore.Const.InsnGroup.id ] array;
-  detail     : Xcore.xcore_insn_detail option;
+  detail     : Xcore.detail option;
 }
 
 type reg = [ Arm.Const.Reg.id
@@ -159,7 +208,7 @@ external disasm_arm64_ffi : Cs_const.Arch.t -> handle -> bytes -> Int64.t -> Int
 external disasm_mips_ffi : Cs_const.Arch.t -> handle -> bytes -> Int64.t -> Int64.t -> mips_insn list = "ml_capstone_disassemble"
 external disasm_ppc_ffi : Cs_const.Arch.t -> handle -> bytes -> Int64.t -> Int64.t -> ppc_insn list = "ml_capstone_disassemble"
 external disasm_sparc_ffi : Cs_const.Arch.t -> handle -> bytes -> Int64.t -> Int64.t -> sparc_insn list = "ml_capstone_disassemble"
-external disasm_sysz_ffi : Cs_const.Arch.t -> handle -> bytes -> Int64.t -> Int64.t -> sysz_insn list = "ml_capstone_disassemble"
+external disasm_sysz_ffi : Cs_const.Arch.t -> handle -> bytes -> Int64.t -> Int64.t -> systemz_insn list = "ml_capstone_disassemble"
 external disasm_x86_ffi : Cs_const.Arch.t -> handle -> bytes -> Int64.t -> Int64.t -> x86_insn list = "ml_capstone_disassemble"
 external disasm_xcore_ffi : Cs_const.Arch.t -> handle -> bytes -> Int64.t -> Int64.t -> xcore_insn list = "ml_capstone_disassemble"
 
@@ -173,7 +222,7 @@ module Arch = struct
     | MIPS  : ([ `MIPS ], mips_insn) t
     | PPC   : ([ `PPC ], ppc_insn) t
     | SPARC : ([ `SPARC ], sparc_insn) t
-    | SYSZ  : ([ `SYSZ ], sysz_insn) t
+    | SYSZ  : ([ `SYSZ ], systemz_insn) t
     | X86   : ([ `X86 ], x86_insn) t
     | XCORE : ([ `XCORE ], xcore_insn) t
 end
