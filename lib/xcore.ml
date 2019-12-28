@@ -3,23 +3,40 @@
 
 module Const = Xcore_const
 
-type xcore_op_mem = {
-	base: int;
-	index: int;
-	disp: int;
-	direct: int;
+module Const = struct
+  include Xcore_const
+
+  module Direction = struct
+    type t = private int
+    type id = [ `Forward
+              | `Backward
+              ]
+
+    let of_id = function
+      | `Forward -> 1
+      | `Backward -> -1
+
+    let to_id = function
+      | 1 -> `Forward
+      | -1 -> `Backward
+      | _ -> invalid_arg "Xcore.Const.Direction.to_id: invalid value"
+
+    let forward = of_id `Forward
+    let backward = of_id `Backward
+  end
+end
+
+type operand_mem = {
+	base      : Const.Reg.t option;
+	index     : Const.Reg.t option;
+	disp      : int32;
+	direction : Const.Direction.t;
 }
 
-type xcore_op_value =
-	| XCORE_OP_INVALID of int
-	| XCORE_OP_REG of int
-	| XCORE_OP_IMM of int
-	| XCORE_OP_MEM of xcore_op_mem
+type operand = Reg of Const.Reg.t
+             | Imm of int32
+             | Mem of operand_mem
 
-type xcore_op = {
-	value: xcore_op_value;
-}
-
-type xcore_insn_detail = {
-	operands: xcore_op array;
+type detail = {
+	operands : operand array;
 }

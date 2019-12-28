@@ -9,10 +9,14 @@
 #include <capstone/arm.h>
 #include <capstone/arm64.h>
 #include <capstone/m680x.h>
+#include <capstone/m68k.h>
 #include <capstone/mips.h>
 #include <capstone/ppc.h>
+#include <capstone/sparc.h>
+#include <capstone/systemz.h>
+#include <capstone/tms320c64x.h>
 #include <capstone/x86.h>
-#include <stdio.h>
+#include <capstone/xcore.h>
 #include <string.h>
 
 #include <capstone/capstone.h>
@@ -26,6 +30,7 @@
 #include "ppc_const_stubs.h"
 #include "sparc_const_stubs.h"
 #include "sysz_const_stubs.h"
+#include "tms320c64x_const_stubs.h"
 #include "x86_const_stubs.h"
 #include "xcore_const_stubs.h"
 
@@ -152,8 +157,8 @@ CAMLprim value ml_capstone_disassemble_inner(cs_arch arch, csh handle,
       unsigned int lcount, i;
       cons = caml_alloc(2, 0);
 
-#define INSN(LOWER_PREFIX, TAG)                                                \
-  rec_insn = caml_alloc(10, TAG);                                              \
+#define INSN(LOWER_PREFIX, GRP_TYPE)                                           \
+  rec_insn = caml_alloc(10, 0);                                                \
   Store_field(rec_insn, 0, Val_int(insn[j - 1].id));                           \
   Store_field(rec_insn, 1, Val_int(insn[j - 1].address));                      \
   Store_field(rec_insn, 2, Val_int(insn[j - 1].size));                         \
@@ -201,7 +206,7 @@ CAMLprim value ml_capstone_disassemble_inner(cs_arch arch, csh handle,
               ml_capstone_to_cs_group_type(insn[j - 1].detail->groups[i]));    \
         } else {                                                               \
           Store_field(array, i,                                                \
-                      ml_capstone_to_##LOWER_PREFIX##_insn_group(              \
+                      ml_capstone_to_##LOWER_PREFIX##_##GRP_TYPE(              \
                           insn[j - 1].detail->groups[i]));                     \
         }                                                                      \
       }                                                                        \
@@ -215,7 +220,7 @@ CAMLprim value ml_capstone_disassemble_inner(cs_arch arch, csh handle,
 
       switch (arch) {
       case CS_ARCH_ARM: {
-        INSN(arm, 0);
+        INSN(arm, insn_group);
         if (insn[j - 1].detail) {
           op_info_val = caml_alloc(10, 0);
 
@@ -334,7 +339,7 @@ CAMLprim value ml_capstone_disassemble_inner(cs_arch arch, csh handle,
         break;
       }
       case CS_ARCH_ARM64: {
-        INSN(arm64, 0);
+        INSN(arm64, insn_group);
         if (insn[j - 1].detail) {
           op_info_val = caml_alloc(4, 0);
 
@@ -477,7 +482,7 @@ CAMLprim value ml_capstone_disassemble_inner(cs_arch arch, csh handle,
         break;
       }
       case CS_ARCH_EVM: {
-        INSN(evm, 0);
+        INSN(evm, insn_group);
         if (insn[j - 1].detail) {
           cs_evm *detail = &insn[j - 1].detail->evm;
           op_info_val = caml_alloc(3, 0);
@@ -491,7 +496,7 @@ CAMLprim value ml_capstone_disassemble_inner(cs_arch arch, csh handle,
         break;
       }
       case CS_ARCH_M680X: {
-        INSN(m680x, 0);
+        INSN(m680x, group_type);
         if (insn[j - 1].detail) {
           cs_m680x *detail = &insn[j - 1].detail->m680x;
           op_info_val = caml_alloc(2, 0);
@@ -547,7 +552,8 @@ CAMLprim value ml_capstone_disassemble_inner(cs_arch arch, csh handle,
                 tmp = caml_alloc(1, 4);
                 tmp2 = caml_alloc(2, 0);
                 Store_field(tmp2, 0, Val_int(detail->operands[i].ext.address));
-                Store_field(tmp2, 1, Val_bool(detail->operands[i].ext.indirect));
+                Store_field(tmp2, 1,
+                            Val_bool(detail->operands[i].ext.indirect));
                 Store_field(tmp, 0, tmp2);
                 break;
               case M680X_OP_DIRECT:
@@ -565,7 +571,8 @@ CAMLprim value ml_capstone_disassemble_inner(cs_arch arch, csh handle,
               tmp2 = caml_alloc(3, 0);
               Store_field(tmp2, 0, tmp);
               Store_field(tmp2, 1, Val_int(detail->operands[i].size));
-              Store_field(tmp2, 2, ml_capstone_cs_ac_type(detail->operands[i].access));
+              Store_field(tmp2, 2,
+                          ml_capstone_cs_ac_type(detail->operands[i].access));
               Store_field(array, i, tmp2);
             }
             Store_field(op_info_val, 1, array);
@@ -577,8 +584,130 @@ CAMLprim value ml_capstone_disassemble_inner(cs_arch arch, csh handle,
           Store_field(rec_insn, 9, Val_none);
         }
       }
+      case CS_ARCH_M68K: {
+        INSN(m68k, group_type);
+        if (insn[j - 1].detail) {
+          op_info_val = caml_alloc(2, 0);
+          cs_m68k *detail = &insn[j - 1].detail->m68k;
+
+          if (detail->op_count > 0) {
+            array = caml_alloc(detail->op_count, 0);
+            for (i = 0; i < detail->op_count; i++) {
+              switch (detail->operands[i].type) {
+              case M68K_OP_REG:
+                tmp2 = caml_alloc(1, 0);
+                Store_field(tmp2, 0, Val_int(detail->operands[i].reg));
+                break;
+              case M68K_OP_REG_BITS:
+                tmp2 = caml_alloc(1, 1);
+                Store_field(tmp2, 0,
+                            caml_copy_int32(
+                                (int32_t)detail->operands[i].register_bits));
+                break;
+              case M68K_OP_REG_PAIR:
+                tmp2 = caml_alloc(1, 2);
+                tmp3 = caml_alloc(2, 0);
+                Store_field(tmp3, 0,
+                            Val_int(detail->operands[i].reg_pair.reg_0));
+                Store_field(tmp3, 1,
+                            Val_int(detail->operands[i].reg_pair.reg_1));
+                Store_field(tmp2, 0, tmp3);
+                break;
+              case M68K_OP_IMM:
+                tmp2 = caml_alloc(1, 3);
+                Store_field(tmp2, 0, caml_copy_int64(detail->operands[i].imm));
+                break;
+              case M68K_OP_MEM:
+                tmp3 = caml_alloc(8, 0);
+                Store_field(
+                    tmp3, 0,
+                    detail->operands[i].mem.base_reg != M68K_REG_INVALID
+                        ? Val_some(Val_int(detail->operands[i].mem.base_reg))
+                        : Val_none);
+                Store_field(
+                    tmp3, 1,
+                    detail->operands[i].mem.index_reg != M68K_REG_INVALID
+                        ? Val_some(Val_int(detail->operands[i].mem.index_reg))
+                        : Val_none);
+                Store_field(
+                    tmp3, 2,
+                    detail->operands[i].mem.in_base_reg != M68K_REG_INVALID
+                        ? Val_some(Val_int(detail->operands[i].mem.in_base_reg))
+                        : Val_none);
+                Store_field(tmp3, 3,
+                            caml_copy_int32(detail->operands[i].mem.in_disp));
+                Store_field(tmp3, 4,
+                            caml_copy_int32(detail->operands[i].mem.out_disp));
+                Store_field(tmp3, 5, Val_int(detail->operands[i].mem.disp));
+                if (detail->operands[i].mem.bitfield) {
+                  tmp2 = caml_alloc(2, 0);
+                  Store_field(tmp2, 0, Val_int(detail->operands[i].mem.width));
+                  Store_field(tmp2, 1, Val_int(detail->operands[i].mem.offset));
+                  Store_field(tmp3, 6, Val_some(tmp2));
+                } else {
+                  Store_field(tmp3, 6, Val_none);
+                }
+                Store_field(tmp3, 7,
+                            Val_int(detail->operands[i].mem.index_size));
+                tmp2 = caml_alloc(1, 4);
+                Store_field(tmp2, 0, tmp3);
+                break;
+              case M68K_OP_BR_DISP:
+                tmp2 = caml_alloc(1, 5);
+                tmp3 = caml_alloc(2, 0);
+                Store_field(tmp3, 0,
+                            caml_copy_int32(detail->operands[i].br_disp.disp));
+                Store_field(tmp3, 1,
+                            Val_int(detail->operands[i].br_disp.disp_size));
+                Store_field(tmp2, 0, tmp3);
+                break;
+              case M68K_OP_FP_DOUBLE:
+                tmp2 = caml_alloc(1, 6);
+                Store_field(tmp2, 0,
+                            caml_copy_double(detail->operands[i].dimm));
+                break;
+              case M68K_OP_FP_SINGLE:
+                tmp2 = caml_alloc(1, 7);
+                Store_field(tmp2, 0,
+                            caml_copy_double(detail->operands[i].simm));
+                break;
+              default:
+                caml_failwith("m68k: unknown operand type");
+                break;
+              }
+              tmp = caml_alloc(2, 0);
+              Store_field(tmp, 0, tmp2);
+              Store_field(tmp, 1, Val_int(detail->operands[i].address_mode));
+              Store_field(array, i, tmp);
+            }
+            Store_field(op_info_val, 0, array);
+          } else {
+            Store_field(op_info_val, 0, Val_emptyarray);
+          }
+
+          switch (detail->op_size.type) {
+          case M68K_SIZE_TYPE_CPU:
+            tmp = caml_alloc(1, 0);
+            Store_field(tmp, 0, Val_int(detail->op_size.cpu_size));
+            Store_field(op_info_val, 1, Val_some(tmp));
+            break;
+          case M68K_SIZE_TYPE_FPU:
+            tmp = caml_alloc(1, 1);
+            Store_field(tmp, 0, Val_int(detail->op_size.fpu_size));
+            Store_field(op_info_val, 1, Val_some(tmp));
+            break;
+          default:
+            Store_field(op_info_val, 1, Val_none);
+            break;
+          }
+
+          Store_field(rec_insn, 9, Val_some(op_info_val));
+        } else {
+          Store_field(rec_insn, 9, Val_none);
+        }
+      }
       case CS_ARCH_MIPS: {
-        INSN(mips, 0);
+        INSN(mips, insn_group);
         if (insn[j - 1].detail) {
           cs_mips *detail = &insn[j - 1].detail->mips;
           op_info_val = caml_alloc(1, 0);
@@ -625,7 +754,7 @@ CAMLprim value ml_capstone_disassemble_inner(cs_arch arch, csh handle,
         break;
       }
       case CS_ARCH_PPC: {
-        INSN(ppc, 0);
+        INSN(ppc, insn_group);
         if (insn[j - 1].detail) {
           cs_ppc *detail = &insn[j - 1].detail->ppc;
           op_info_val = caml_alloc(4, 0);
@@ -690,131 +819,245 @@ CAMLprim value ml_capstone_disassemble_inner(cs_arch arch, csh handle,
         break;
       }
       case CS_ARCH_SPARC: {
-        INSN(sparc, 0);
+        INSN(sparc, insn_group);
         if (insn[j - 1].detail) {
-          detail_opt = caml_alloc(1, 0); // Some
+          cs_sparc *detail = &insn[j - 1].detail->sparc;
           op_info_val = caml_alloc(3, 0);
 
-          Store_field(op_info_val, 0, Val_int(insn[j - 1].detail->sparc.cc));
-          Store_field(op_info_val, 1, Val_int(insn[j - 1].detail->sparc.hint));
+          Store_field(op_info_val, 0,
+                      detail->cc != SPARC_CC_INVALID
+                      ? Val_some(Val_int(detail->cc))
+                      : Val_none);
+          Store_field(op_info_val, 1,
+                      detail->hint != SPARC_HINT_INVALID
+                      ? Val_some(Val_int(detail->hint))
+                      : Val_none);
 
-          lcount = insn[j - 1].detail->sparc.op_count;
-          if (lcount > 0) {
-            array = caml_alloc(lcount, 0);
-            for (i = 0; i < lcount; i++) {
-              tmp2 = caml_alloc(1, 0);
-              switch (insn[j - 1].detail->sparc.operands[i].type) {
+          if (detail->op_count > 0) {
+            array = caml_alloc(detail->op_count, 0);
+            for (i = 0; i < detail->op_count; i++) {
+              switch (detail->operands[i].type) {
               case SPARC_OP_REG:
-                tmp = caml_alloc(1, 1);
-                Store_field(tmp, 0,
-                            Val_int(insn[j - 1].detail->sparc.operands[i].reg));
+                tmp = caml_alloc(1, 0);
+                Store_field(tmp, 0, Val_int(detail->operands[i].reg));
                 break;
               case SPARC_OP_IMM:
-                tmp = caml_alloc(1, 2);
-                Store_field(tmp, 0,
-                            Val_int(insn[j - 1].detail->sparc.operands[i].imm));
+                tmp = caml_alloc(1, 1);
+                Store_field(tmp, 0, caml_copy_int64(detail->operands[i].imm));
                 break;
               case SPARC_OP_MEM:
-                tmp = caml_alloc(1, 3);
-                tmp3 = caml_alloc(3, 0);
+                tmp = caml_alloc(1, 2);
+                tmp2 = caml_alloc(3, 0);
                 Store_field(
-                    tmp3, 0,
-                    Val_int(insn[j - 1].detail->sparc.operands[i].mem.base));
+                    tmp2, 0,
+                    detail->operands[i].mem.base != SPARC_REG_INVALID
+                        ? Val_some(Val_int(detail->operands[i].mem.base))
+                        : Val_none);
                 Store_field(
-                    tmp3, 1,
-                    Val_int(insn[j - 1].detail->sparc.operands[i].mem.index));
-                Store_field(
-                    tmp3, 2,
-                    Val_int(insn[j - 1].detail->sparc.operands[i].mem.disp));
-                Store_field(tmp, 0, tmp3);
+                    tmp2, 1,
+                    detail->operands[i].mem.index != SPARC_REG_INVALID
+                        ? Val_some(Val_int(detail->operands[i].mem.index))
+                        : Val_none);
+                Store_field(tmp2, 2, caml_copy_int32(detail->operands[i].mem.disp));
+                Store_field(tmp, 0, tmp2);
                 break;
               default:
+                caml_failwith("sparc: unknown operand type");
                 break;
               }
-              Store_field(tmp2, 0, tmp);
-              Store_field(array, i, tmp2);
+              Store_field(array, i, tmp);
             }
           } else {
             array = Val_emptyarray;
           }
 
           Store_field(op_info_val, 2, array);
-
-          Store_field(detail_opt, 0, op_info_val);
-          Store_field(rec_insn, 9, detail_opt);
+          Store_field(rec_insn, 9, Val_some(detail_opt));
         } else {
-          Store_field(rec_insn, 9, Val_int(0)); // None
+          Store_field(rec_insn, 9, Val_none);
         }
         break;
       }
       case CS_ARCH_SYSZ: {
-        INSN(sysz, 0);
+        INSN(sysz, insn_group);
         if (insn[j - 1].detail) {
-          detail_opt = caml_alloc(1, 0); // Some
+          cs_sysz *detail = &insn[j - 1].detail->sysz;
           op_info_val = caml_alloc(2, 0);
 
-          Store_field(op_info_val, 0, Val_int(insn[j - 1].detail->sysz.cc));
+          Store_field(op_info_val, 0,
+                      detail->cc != SYSZ_CC_INVALID
+                          ? Val_some(Val_int(detail->cc))
+                          : Val_none);
 
-          lcount = insn[j - 1].detail->sysz.op_count;
-          if (lcount > 0) {
-            array = caml_alloc(lcount, 0);
-            for (i = 0; i < lcount; i++) {
-              tmp2 = caml_alloc(1, 0);
-              switch (insn[j - 1].detail->sysz.operands[i].type) {
+          if (detail->op_count > 0) {
+            array = caml_alloc(detail->op_count, 0);
+            for (i = 0; i < detail->op_count; i++) {
+              switch (detail->operands[i].type) {
               case SYSZ_OP_REG:
-                tmp = caml_alloc(1, 1);
+                tmp = caml_alloc(1, 0);
                 Store_field(tmp, 0,
-                            Val_int(insn[j - 1].detail->sysz.operands[i].reg));
+                            Val_int(detail->operands[i].reg));
                 break;
               case SYSZ_OP_ACREG:
-                tmp = caml_alloc(1, 2);
+                tmp = caml_alloc(1, 1);
                 Store_field(tmp, 0,
-                            Val_int(insn[j - 1].detail->sysz.operands[i].reg));
+                            Val_int(detail->operands[i].reg));
                 break;
               case SYSZ_OP_IMM:
-                tmp = caml_alloc(1, 3);
-                Store_field(tmp, 0,
-                            Val_int(insn[j - 1].detail->sysz.operands[i].imm));
+                tmp = caml_alloc(1, 2);
+                Store_field(tmp, 0, caml_copy_int64(detail->operands[i].imm));
                 break;
               case SYSZ_OP_MEM:
-                tmp = caml_alloc(1, 4);
-                tmp3 = caml_alloc(4, 0);
+                tmp = caml_alloc(1, 3);
+                tmp2 = caml_alloc(4, 0);
                 Store_field(
-                    tmp3, 0,
-                    Val_int(insn[j - 1].detail->sysz.operands[i].mem.base));
+                    tmp2, 0,
+                    detail->operands[i].mem.base != SYSZ_REG_INVALID
+                        ? Val_some(Val_int(detail->operands[i].mem.base))
+                        : Val_none);
                 Store_field(
-                    tmp3, 1,
-                    Val_int(insn[j - 1].detail->sysz.operands[i].mem.index));
+                    tmp2, 1,
+                    detail->operands[i].mem.index != SYSZ_REG_INVALID
+                        ? Val_some(Val_int(detail->operands[i].mem.index))
+                        : Val_none);
                 Store_field(
-                    tmp3, 2,
+                    tmp2, 2,
                     caml_copy_int64(
-                        insn[j - 1].detail->sysz.operands[i].mem.length));
-                Store_field(tmp3, 3,
+                        detail->operands[i].mem.length));
+                Store_field(tmp2, 3,
                             caml_copy_int64(
-                                insn[j - 1].detail->sysz.operands[i].mem.disp));
-                Store_field(tmp, 0, tmp3);
+                                detail->operands[i].mem.disp));
+                Store_field(tmp, 0, tmp2);
                 break;
               default:
+                caml_failwith("systemz: unknown operand type");
                 break;
               }
-              Store_field(tmp2, 0, tmp);
-              Store_field(array, i, tmp2);
+              Store_field(array, i, tmp);
             }
           } else {
             array = Val_emptyarray;
           }
 
           Store_field(op_info_val, 1, array);
-
-          Store_field(detail_opt, 0, op_info_val);
-          Store_field(rec_insn, 9, detail_opt);
+          Store_field(rec_insn, 9, Val_some(op_info_val));
         } else {
-          Store_field(rec_insn, 9, Val_int(0)); // None
+          Store_field(rec_insn, 9, Val_none);
+        }
+        break;
+      }
+      case CS_ARCH_TMS320C64X: {
+        INSN(tms320c64x, insn_group);
+        if (insn[j - 1].detail) {
+          cs_tms320c64x *detail = &insn[j - 1].detail->tms320c64x;
+          op_info_val = caml_alloc(4, 0);
+
+          if (detail->op_count > 0) {
+            array = caml_alloc(detail->op_count, 0);
+            for (i = 0; i < detail->op_count; i++) {
+              switch (detail->operands[i].type) {
+              case TMS320C64X_OP_REG:
+                tmp = caml_alloc(1, 0);
+                Store_field(tmp, 0, Val_int(detail->operands[i].reg));
+                break;
+              case TMS320C64X_OP_REGPAIR:
+                // based on cstool/cstool_tms320c64x.c
+                tmp = caml_alloc(1, 1);
+                tmp2 = caml_alloc(2, 0);
+                Store_field(tmp2, 0, Val_int(detail->operands[i].reg + 1));
+                Store_field(tmp2, 1, Val_int(detail->operands[i].reg));
+                Store_field(tmp, 0, tmp2);
+                break;
+              case TMS320C64X_OP_IMM:
+                tmp = caml_alloc(1, 2);
+                Store_field(tmp, 0, caml_copy_int32(detail->operands[i].imm));
+                break;
+              case TMS320C64X_OP_MEM:
+                tmp = caml_alloc(1, 3);
+                tmp2 = caml_alloc(6, 0);
+
+                Store_field(
+                    tmp2, 0,
+                    detail->operands[i].mem.base != TMS320C64X_REG_INVALID
+                        ? Val_some(Val_int(detail->operands[i].mem.base))
+                        : Val_none);
+
+                switch (detail->operands[i].mem.disptype) {
+                case TMS320C64X_MEM_DISP_REGISTER:
+                  tmp3 = caml_alloc(1, 0);
+                  Store_field(tmp3, 0, Val_int(detail->operands[i].mem.disp));
+                  Store_field(tmp2, 1, Val_some(tmp3));
+                  break;
+                case TMS320C64X_MEM_DISP_CONSTANT:
+                  tmp3 = caml_alloc(1, 1);
+                  Store_field(tmp3, 0, Val_int(detail->operands[i].mem.disp));
+                  Store_field(tmp2, 1, Val_some(tmp3));
+                  break;
+                default:
+                  Store_field(tmp2, 1, Val_none);
+                }
+
+                Store_field(
+                    tmp2, 2,
+                    detail->operands[i].mem.unit != TMS320C64X_FUNIT_INVALID &&
+                            detail->operands[i].mem.unit != TMS320C64X_FUNIT_NO
+                        ? Val_some(Val_int(detail->operands[i].mem.unit))
+                        : Val_none);
+                Store_field(tmp2, 3, Val_bool(detail->operands[i].mem.scaled));
+                Store_field(
+                    tmp2, 4,
+                    detail->operands[i].mem.direction !=
+                            TMS320C64X_MEM_DIR_INVALID
+                        ? Val_some(Val_int(detail->operands[i].mem.direction))
+                        : Val_none);
+                Store_field(
+                    tmp2, 5,
+                    detail->operands[i].mem.modify != TMS320C64X_MEM_MOD_INVALID
+                        ? Val_some(Val_int(detail->operands[i].mem.modify))
+                        : Val_none);
+                Store_field(tmp, 0, tmp2);
+                break;
+              default:
+                caml_failwith("tms320c64x: unknown operand type");
+                break;
+              }
+              Store_field(array, i, tmp);
+            }
+            Store_field(op_info_val, 0, array);
+          } else {
+            Store_field(op_info_val, 0, Val_emptyarray);
+          }
+
+          if (detail->condition.reg != TMS320C64X_REG_INVALID) {
+            tmp = caml_alloc(2, 0);
+            Store_field(tmp, 0, Val_int(detail->condition.reg));
+            Store_field(tmp, 1, Val_bool(detail->condition.zero));
+            Store_field(op_info_val, 1, Val_some(tmp));
+          } else {
+            Store_field(op_info_val, 1, Val_none);
+          }
+
+          if (detail->funit.unit != TMS320C64X_FUNIT_NO &&
+              detail->funit.unit != TMS320C64X_FUNIT_INVALID) {
+            tmp = caml_alloc(3, 0);
+            Store_field(tmp, 0, Val_int(detail->funit.unit));
+            Store_field(tmp, 1, Val_int(detail->funit.side));
+            // is crosspath meaningful if there is no unit?
+            Store_field(tmp, 2, Val_bool(detail->funit.crosspath));
+            Store_field(op_info_val, 2, Val_some(tmp));
+          } else {
+            Store_field(op_info_val, 2, Val_none);
+          }
+          Store_field(op_info_val, 3, Val_bool(detail->parallel));
+
+          Store_field(rec_insn, 9, Val_some(op_info_val));
+        } else {
+          Store_field(rec_insn, 9, Val_none);
         }
         break;
       }
       case CS_ARCH_X86: {
-        INSN(x86, 0);
+        INSN(x86, insn_group);
         if (insn[j - 1].detail) {
           cs_x86 *detail = &insn[j - 1].detail->x86;
           op_info_val = caml_alloc(22, 0);
@@ -1020,67 +1263,60 @@ CAMLprim value ml_capstone_disassemble_inner(cs_arch arch, csh handle,
         break;
       }
       case CS_ARCH_XCORE: {
-        INSN(xcore, 0);
+        INSN(xcore, insn_group);
         if (insn[j - 1].detail) {
-          detail_opt = caml_alloc(1, 0); // Some
+          cs_xcore *detail = &insn[j-1].detail->xcore;
           op_info_val = caml_alloc(1, 0);
 
-          lcount = insn[j - 1].detail->xcore.op_count;
-          if (lcount > 0) {
-            array = caml_alloc(lcount, 0);
-            for (i = 0; i < lcount; i++) {
-              tmp2 = caml_alloc(1, 0);
-              switch (insn[j - 1].detail->xcore.operands[i].type) {
+          if (detail->op_count > 0) {
+            array = caml_alloc(detail->op_count, 0);
+            for (i = 0; i < detail->op_count; i++) {
+              switch (detail->operands[i].type) {
               case XCORE_OP_REG:
-                tmp = caml_alloc(1, 1);
-                Store_field(tmp, 0,
-                            Val_int(insn[j - 1].detail->xcore.operands[i].reg));
+                tmp = caml_alloc(1, 0);
+                Store_field(tmp, 0, Val_int(detail->operands[i].reg));
                 break;
               case XCORE_OP_IMM:
-                tmp = caml_alloc(1, 2);
-                Store_field(tmp, 0,
-                            Val_int(insn[j - 1].detail->xcore.operands[i].imm));
+                tmp = caml_alloc(1, 1);
+                Store_field(tmp, 0, caml_copy_int32(detail->operands[i].imm));
                 break;
               case XCORE_OP_MEM:
-                tmp = caml_alloc(1, 3);
-                tmp3 = caml_alloc(4, 0);
+                tmp = caml_alloc(1, 2);
+                tmp2 = caml_alloc(4, 0);
                 Store_field(
-                    tmp3, 0,
-                    Val_int(insn[j - 1].detail->xcore.operands[i].mem.base));
+                    tmp2, 0,
+                    detail->operands[i].mem.base != XCORE_REG_INVALID
+                        ? Val_some(Val_int(detail->operands[i].mem.base))
+                        : Val_none);
                 Store_field(
-                    tmp3, 1,
-                    Val_int(insn[j - 1].detail->xcore.operands[i].mem.index));
-                Store_field(
-                    tmp3, 2,
-                    caml_copy_int64(
-                        insn[j - 1].detail->xcore.operands[i].mem.disp));
-                Store_field(
-                    tmp3, 3,
-                    caml_copy_int64(
-                        insn[j - 1].detail->xcore.operands[i].mem.direct));
-                Store_field(tmp, 0, tmp3);
+                    tmp2, 1,
+                    detail->operands[i].mem.index != XCORE_REG_INVALID
+                        ? Val_some(Val_int(detail->operands[i].mem.index))
+                        : Val_none);
+                Store_field(tmp2, 2, caml_copy_int32(detail->operands[i].mem.disp));
+                Store_field(tmp2, 3, Val_int(detail->operands[i].mem.direct));
+                Store_field(tmp, 0, tmp2);
                 break;
               default:
+                caml_failwith("xcore: unknown operand type");
                 break;
               }
-              Store_field(tmp2, 0, tmp);
-              Store_field(array, i, tmp2);
+              Store_field(array, i, tmp);
             }
           } else {
             array = Val_emptyarray;
           }
 
           Store_field(op_info_val, 0, array);
-
-          Store_field(detail_opt, 0, op_info_val);
-          Store_field(rec_insn, 9, detail_opt);
+          Store_field(rec_insn, 9, Val_some(op_info_val));
         } else {
-          Store_field(rec_insn, 9, Val_int(0)); // None
+          Store_field(rec_insn, 9, Val_none);
         }
         break;
       }
       default:
-        caml_invalid_argument("unsupported architecture");
+        caml_failwith("capstone: unsupported architecture");
+        break;
       }
 
       Store_field(cons, 0, rec_insn);
@@ -1089,9 +1325,6 @@ CAMLprim value ml_capstone_disassemble_inner(cs_arch arch, csh handle,
     }
     cs_free(insn, c);
   }
-
-  fflush(stdout);
-
   CAMLreturn(list);
 }
 

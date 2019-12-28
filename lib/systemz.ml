@@ -3,25 +3,19 @@
 
 module Const = Sysz_const
 
-type sysz_op_mem = {
-	base: int;
-	index: int;
-	length: int64;
-	disp: int64;
+type operand_mem = {
+	base   : Const.Reg.t option;
+	index  : Const.Reg.t option;
+	length : int64;
+	disp   : int64;
 }
 
-type sysz_op_value = 
-	| SYSZ_OP_INVALID of int
-	| SYSZ_OP_REG of int
-	| SYSZ_OP_ACREG of int
-	| SYSZ_OP_IMM of int
-	| SYSZ_OP_MEM of sysz_op_mem
+type operand = Reg of Const.Reg.t
+             | AcReg of Const.Reg.t
+             | Imm of int64
+             | Mem of operand_mem
 
-type sysz_op = {
-	value: sysz_op_value;
-}
-
-type sysz_insn_detail = {
-	cc: int;
-	operands: sysz_op array;
+type detail = {
+	cc       : Const.Cc.t option;
+	operands : operand array;
 }
