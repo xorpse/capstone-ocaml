@@ -3,22 +3,15 @@
 
 module Const = Mips_const
 
-(* architecture specific info of instruction *)
-type mips_op_mem = {
-	base: int;
-	disp: int
+type operand_mem = {
+	base : Const.Reg.t option;
+	disp : int64;
 }
 
-type mips_op_value =
-	| MIPS_OP_INVALID of int
-	| MIPS_OP_REG of int
-	| MIPS_OP_IMM of int
-	| MIPS_OP_MEM of mips_op_mem
+type operand = Reg of Const.Reg.t
+             | Imm of int64
+             | Mem of operand_mem
 
-type mips_op = {
-	value: mips_op_value;
-}
-
-type mips_insn_detail = {
-	operands: mips_op array;
+type detail = {
+	operands: operand array;
 }
