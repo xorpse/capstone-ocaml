@@ -306,11 +306,11 @@ module Const = struct
 end
 
 type operand_mem_val = {
-	segment : Const.Reg.t option;
-	base    : Const.Reg.t option;
-	index   : Const.Reg.t option;
-	scale   : int option;
-	disp    : int64;
+  segment : Const.Reg.t option;
+  base    : Const.Reg.t option;
+  index   : Const.Reg.t option;
+  scale   : int option;
+  disp    : int64;
 }
 
 type operand_val = Imm of int64
@@ -318,11 +318,11 @@ type operand_val = Imm of int64
                  | Reg of Const.Reg.t
 
 type operand = {
-	value           : operand_val;
+  value           : operand_val;
   size            : int;
   access          : [ `R | `W | `RW ];
-	avx_bcast       : Const.AvxBcast.t option;
-	avx_zero_opmask : int;
+  avx_bcast       : Const.AvxBcast.t option;
+  avx_zero_opmask : int;
 }
 
 type encoding = {
@@ -334,24 +334,24 @@ type encoding = {
 }
 
 type detail = {
-	prefix             : Const.Prefix.t option;
+  prefix             : Const.Prefix.t option;
   segment_override   : Const.SegmentReg.t option;
   op_size_override   : bool;
   addr_size_override : bool;
   opcode             : int array;
-	rex                : int;
-	addr_size          : int;
-	modrm              : int;
-	disp               : int64 option;
+  rex                : int;
+  addr_size          : int;
+  modrm              : int;
+  disp               : int64 option;
   sib                : int option;
-	sib_index          : Const.Reg.t option;
-	sib_scale          : int option;
-	sib_base           : Const.Reg.t option;
+  sib_index          : Const.Reg.t option;
+  sib_scale          : int option;
+  sib_base           : Const.Reg.t option;
   xop_cc             : Const.XopCc.t option;
   sse_cc             : Const.SseCc.t option;
-	avx_cc             : Const.AvxCc.t option;
-	avx_sae            : bool;
-	avx_rm             : Const.AvxRm.t option;
+  avx_cc             : Const.AvxCc.t option;
+  avx_sae            : bool;
+  avx_rm             : Const.AvxRm.t option;
   eflags             : Const.EFlags.t option;
   fpu_flags          : Const.FPUFlags.t option;
   operands           : operand array;

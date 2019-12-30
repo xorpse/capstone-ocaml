@@ -23,7 +23,7 @@ let template = Hashtbl.of_seq @@ List.to_seq [
     "tms320c64x.h", "tms320c64x";
     "x86.h",        "x86";
     "xcore.h",      "xcore";
-]
+  ]
 
 (* if not in [variant_mapping] then in variant;
    for vals if in [variant_mapping] then map to value
@@ -73,47 +73,47 @@ let variant_mapping = Hashtbl.of_seq @@ List.to_seq [
       "LR",  "X30";
     ];
     "mips_reg", Hashtbl.of_seq @@ List.to_seq [
-     "ZERO", "REG_0";
-     "AT",   "REG_1";
-     "V0",   "REG_2";
-     "V1",   "REG_3";
-     "A0",   "REG_4";
-     "A1",   "REG_5";
-     "A2",   "REG_6";
-     "A3",   "REG_7";
-     "T0",   "REG_8";
-     "T1",   "REG_9";
-     "T2",   "REG_10";
-     "T3",   "REG_11";
-     "T4",   "REG_12";
-     "T5",   "REG_13";
-     "T6",   "REG_14";
-     "T7",   "REG_15";
-     "S0",   "REG_16";
-     "S1",   "REG_17";
-     "S2",   "REG_18";
-     "S3",   "REG_19";
-     "S4",   "REG_20";
-     "S5",   "REG_21";
-     "S6",   "REG_22";
-     "S7",   "REG_23";
-     "T8",   "REG_24";
-     "T9",   "REG_25";
-     "K0",   "REG_26";
-     "K1",   "REG_27";
-     "GP",   "REG_28";
-     "SP",   "REG_29";
-     "S8",   "REG_30";
-     "FP",   "REG_30";
-     "RA",   "REG_31";
-     "HI0",  "AC0";
-     "HI1",  "AC1";
-     "HI2",  "AC2";
-     "HI3",  "AC3";
-     "LO0",  "AC0";
-     "LO1",  "AC1";
-     "LO2",  "AC2";
-     "LO3",  "AC3";
+      "ZERO", "REG_0";
+      "AT",   "REG_1";
+      "V0",   "REG_2";
+      "V1",   "REG_3";
+      "A0",   "REG_4";
+      "A1",   "REG_5";
+      "A2",   "REG_6";
+      "A3",   "REG_7";
+      "T0",   "REG_8";
+      "T1",   "REG_9";
+      "T2",   "REG_10";
+      "T3",   "REG_11";
+      "T4",   "REG_12";
+      "T5",   "REG_13";
+      "T6",   "REG_14";
+      "T7",   "REG_15";
+      "S0",   "REG_16";
+      "S1",   "REG_17";
+      "S2",   "REG_18";
+      "S3",   "REG_19";
+      "S4",   "REG_20";
+      "S5",   "REG_21";
+      "S6",   "REG_22";
+      "S7",   "REG_23";
+      "T8",   "REG_24";
+      "T9",   "REG_25";
+      "K0",   "REG_26";
+      "K1",   "REG_27";
+      "GP",   "REG_28";
+      "SP",   "REG_29";
+      "S8",   "REG_30";
+      "FP",   "REG_30";
+      "RA",   "REG_31";
+      "HI0",  "AC0";
+      "HI1",  "AC1";
+      "HI2",  "AC2";
+      "HI3",  "AC3";
+      "LO0",  "AC0";
+      "LO1",  "AC1";
+      "LO2",  "AC2";
+      "LO3",  "AC3";
     ];
     "sparc_reg", Hashtbl.of_seq @@ List.to_seq [
       "FP", "I6";
@@ -126,7 +126,7 @@ let variant_mapping = Hashtbl.of_seq @@ List.to_seq [
     "x86_prefix", Hashtbl.of_seq @@ List.to_seq [
       "REPE", "REP";
     ];
-]
+  ]
 
 module Syms = struct
   module T = struct
@@ -247,21 +247,21 @@ let get_syms ~mapper ~typ ~prefix syms t =
   else match split_wsbr t with
     | _ :: sep :: _ when sep <> "=" -> syms
     | name :: _ when String.starts_with (String.uppercase_ascii prefix) name -> begin
-      let sym = String.split_on_char ~sep:'_' name |>
-        List.drop 2 |>
-        String.concat ~sep:"_" |>
-        String.uppercase_ascii
-      in
+        let sym = String.split_on_char ~sep:'_' name |>
+                  List.drop 2 |>
+                  String.concat ~sep:"_" |>
+                  String.uppercase_ascii
+        in
 
-      let sym = if is_digit sym.[0] then
-          let pr = String.split_on_char ~sep:'_' typ |>
-                   List.last_exn |>
-                   String.uppercase_ascii
-          in
-          pr ^ "_" ^ sym
-        else
-          sym
-      in
+        let sym = if is_digit sym.[0] then
+            let pr = String.split_on_char ~sep:'_' typ |>
+                     List.last_exn |>
+                     String.uppercase_ascii
+            in
+            pr ^ "_" ^ sym
+          else
+            sym
+        in
 
       (*
         let sym = value ~default:sym @@ (Hashtbl.find_opt variant_mapping typ >>= fun tm ->
@@ -269,23 +269,26 @@ let get_syms ~mapper ~typ ~prefix syms t =
         in
       *)
 
-      let sym_name = "CAPSTONE_ML_SYM_" ^ (String.uppercase_ascii sym) in
-      let lhs = trim name in
+        let sym_name = "CAPSTONE_ML_SYM_" ^ (String.uppercase_ascii sym) in
+        let lhs = trim name in
 
-      if String.ends_with "_ENDING" lhs || String.ends_with "_MAX" lhs then
-        syms
-      else match Hashtbl.find_opt mapper typ with
-        | None ->
-          Syms.Map.singleton (sym_name, sym) lhs |> Hashtbl.add mapper typ;
-          Syms.Set.add (sym_name, sym) syms
-        | Some mt ->
-          if Syms.Map.mem (sym_name, sym) mt then
-            syms
-          else (
-            Syms.Map.add (sym_name, sym) lhs mt |> Hashtbl.replace mapper typ;
+        if String.ends_with "_ENDING" lhs ||
+           String.ends_with "_MAX" lhs ||
+           String.ends_with "_INVALID" lhs
+        then
+          syms
+        else match Hashtbl.find_opt mapper typ with
+          | None ->
+            Syms.Map.singleton (sym_name, sym) lhs |> Hashtbl.add mapper typ;
             Syms.Set.add (sym_name, sym) syms
-          )
-    end
+          | Some mt ->
+            if Syms.Map.mem (sym_name, sym) mt then
+              syms
+            else (
+              Syms.Map.add (sym_name, sym) lhs mt |> Hashtbl.replace mapper typ;
+              Syms.Set.add (sym_name, sym) syms
+            )
+      end
     | _ -> syms
 
 (* Perform the .ml/.c/.h file generation *)
@@ -388,29 +391,29 @@ extern value ml_int_capstone_to_%s(value v);
 |} k_lower k_lower k_lower;
 
           Syms.Map.iter (fun (sym_name, sym) vv ->
-            let open Option in
-            if String.starts_with "cs_" k_lower then (
-              if (Hashtbl.find_opt variant_mapping k_lower >>| fun tm -> Hashtbl.mem tm sym) <> Some true then (
-                Printf.bprintf c2ml {|  case %s:
+              let open Option in
+              if String.starts_with "cs_" k_lower then (
+                if (Hashtbl.find_opt variant_mapping k_lower >>| fun tm -> Hashtbl.mem tm sym) <> Some true then (
+                  Printf.bprintf c2ml {|  case %s:
     CAMLreturn(%s);
 |} vv sym_name
-              );
-              Printf.bprintf ml2c {|  case %s:
+                );
+                Printf.bprintf ml2c {|  case %s:
     CAMLreturn(%s);
 |} sym_name vv;
-              Printf.bprintf mlty {|    | `%s
+                Printf.bprintf mlty {|    | `%s
 |} sym
-            ) else if (Hashtbl.find_opt variant_mapping k_lower >>| fun tm -> Hashtbl.mem tm sym) <> Some true then (
-              Printf.bprintf c2ml {|  case %s:
+              ) else if (Hashtbl.find_opt variant_mapping k_lower >>| fun tm -> Hashtbl.mem tm sym) <> Some true then (
+                Printf.bprintf c2ml {|  case %s:
     CAMLreturn(%s);
 |} vv sym_name;
-              Printf.bprintf ml2c {|  case %s:
+                Printf.bprintf ml2c {|  case %s:
     CAMLreturn(%s);
 |} sym_name vv;
-              Printf.bprintf mlty {|    | `%s
+                Printf.bprintf mlty {|    | `%s
 |} sym
-            )
-          ) v;
+              )
+            ) v;
 
           Printf.bprintf c2ml {|  default:
     caml_invalid_argument("ml_capstone_%s: impossible value");
@@ -465,7 +468,7 @@ value ml_int_capstone_to_%s(value v) {
 type %s = %s.t
 
 |} k_lower ml_mod;
-      ) mapper;
+        ) mapper;
 
       Printf.fprintf h_file {|#endif|};
 

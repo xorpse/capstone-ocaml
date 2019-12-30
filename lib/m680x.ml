@@ -1,5 +1,7 @@
 module Const = struct
-  include M680x_const
+  module Insn = M680x_const.Insn
+  module InsnGroup = M680x_const.GroupType
+  module Reg = M680x_const.Reg
 
   module Flags = struct
     type t = private int

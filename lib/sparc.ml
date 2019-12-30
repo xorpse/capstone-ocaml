@@ -28,9 +28,9 @@ module Const = struct
 end
 
 type operand_mem = {
-	base  : Const.Reg.t option;
-	index : Const.Reg.t option;
-	disp  : int32;
+  base  : Const.Reg.t option;
+  index : Const.Reg.t option;
+  disp  : int32;
 }
 
 type operand = Reg of Const.Reg.t
@@ -38,8 +38,8 @@ type operand = Reg of Const.Reg.t
              | Mem of operand_mem
 
 type detail = {
-	cc       : Const.Cc.t option;
-	hint     : Const.Hint.t option;
-	operands : operand array;
+  cc       : Const.Cc.t option;
+  hint     : Const.Hint.t option;
+  operands : operand array;
 }
 

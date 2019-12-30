@@ -4,8 +4,8 @@
 module Const = Mips_const
 
 type operand_mem = {
-	base : Const.Reg.t option;
-	disp : int64;
+  base : Const.Reg.t option;
+  disp : int64;
 }
 
 type operand = Reg of Const.Reg.t
@@ -13,5 +13,5 @@ type operand = Reg of Const.Reg.t
              | Mem of operand_mem
 
 type detail = {
-	operands: operand array;
+  operands: operand array;
 }

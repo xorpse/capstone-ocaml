@@ -1,4 +1,12 @@
-module Const = M68k_const
+module Const = struct
+  module AddressMode = M68k_const.AddressMode
+  module CpuSize = M68k_const.CpuSize
+  module FpuSize = M68k_const.FpuSize
+  module OpBrDispSize = M68k_const.OpBrDispSize
+  module Insn = M68k_const.Insn
+  module InsnGroup = M68k_const.GroupType
+  module Reg = M68k_const.Reg
+end
 
 type operand_size = Cpu of Const.CpuSize.t
                   | Fpu of Const.FpuSize.t
