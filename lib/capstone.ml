@@ -29,6 +29,7 @@ end
 *)
 
 exception Capstone_error of Const.err
+let _ = Callback.register_exception (Capstone_error Const.Err.ok)
 
 type handle
 

@@ -142,7 +142,7 @@ CAMLprim value ml_capstone_set_option(value handle, value opt, value val) {
 
   if (err != CS_ERR_OK) {
     caml_raise_with_arg(*caml_named_value("Capstone_error"),
-                        ml_cs_err_to_capstone(err));
+                        Val_int(err));
   }
 
   CAMLreturn(Val_unit);
